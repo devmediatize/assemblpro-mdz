@@ -1,0 +1,56 @@
+services:
+  assemblpro:
+    build: .
+    container_name: assemblpro
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - TZ=America/Sao_Paulo
+    volumes:
+      - ./app:/app/app:ro
+      - ./static:/app/static:ro
+      - ./run.py:/app/run.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - ./.env:/app/.env:ro
+    # networks:
+    #   - proxy
+    labels:
+      # Labels gerais
+      - "com.docker.stack=assemblpro"
+      - "com.docker.service=assemblpro"
+
+      # # Traefik configuração
+      # - "traefik.enable=true"
+      # - "traefik.docker.network=proxy"
+
+      # # ============================================
+      # # URL: assemblpro.mediatize.com.br
+      # # ============================================
+
+      # # Roteamento HTTP -> HTTPS
+      # - "traefik.http.routers.assemblpro.rule=Host(`assemblpro.mediatize.com.br`)"
+      # - "traefik.http.routers.assemblpro.entrypoints=http"
+      # - "traefik.http.routers.assemblpro.middlewares=assemblpro-redirect-https@docker"
+
+      # # Roteamento HTTPS
+      # - "traefik.http.routers.assemblpro-secure.rule=Host(`assemblpro.mediatize.com.br`)"
+      # - "traefik.http.routers.assemblpro-secure.entrypoints=https"
+      # - "traefik.http.routers.assemblpro-secure.tls=true"
+      # - "traefik.http.routers.assemblpro-secure.tls.certresolver=letsencrypt"
+      # - "traefik.http.routers.assemblpro-secure.service=assemblpro-service"
+
+      # # ============================================
+      # # MIDDLEWARES
+      # # ============================================
+
+      # # Middleware para redirect HTTP -> HTTPS
+      # - "traefik.http.middlewares.assemblpro-redirect-https.redirectscheme.scheme=https"
+      # - "traefik.http.middlewares.assemblpro-redirect-https.redirectscheme.permanent=true"
+
+      # # Serviço - porta interna do container
+      # - "traefik.http.services.assemblpro-service.loadbalancer.server.port=8033"
+
+# networks:
+#   proxy:
+#     external: true

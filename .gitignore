@@ -1,5 +1,6 @@
 # Environment
 .env
+.env.backup
 .env.local
 .env.*.local
 
@@ -30,6 +31,9 @@ server.log
 # OS
 .DS_Store
 Thumbs.db
+
+# Docker
+docker-compose.yml
 
 # Build
 dist/
