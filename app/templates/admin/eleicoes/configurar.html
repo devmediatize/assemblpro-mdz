@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header">
+            <a href="/admin/eleicoes" style="color: var(--text-secondary); font-size: 0.9rem;">
+                <i class="fas fa-arrow-left"></i> Voltar para Eleições
+            </a>
+            <h1 class="mt-2">Configurar Eleição</h1>
+            <p class="subtitle" id="eleicaoTitulo"></p>
+        </div>
+
+        <!-- Wizard Steps -->
+        <div class="card mb-3">
+            <div class="d-flex justify-between">
+                <div class="step active" data-step="1">
+                    <span class="step-number">1</span>
+                    <span>Dados Gerais</span>
+                </div>
+                <div class="step" data-step="2">
+                    <span class="step-number">2</span>
+                    <span>Candidatos</span>
+                </div>
+                <div class="step" data-step="3">
+                    <span class="step-number">3</span>
+                    <span>Revisão</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Dados Gerais -->
+        <div id="step1" class="step-content">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem; color: var(--accent-green);">
+                    <i class="fas fa-info-circle"></i> Dados da Eleição
+                </h3>
+
+                <form id="formDadosGerais">
+                    <div class="form-group">
+                        <label class="form-label">Título</label>
+                        <input type="text" class="form-control" id="titulo" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" id="descricao" rows="3"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Data/Hora Início</label>
+                            <input type="datetime-local" class="form-control" id="dataInicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Data/Hora Fim</label>
+                            <input type="datetime-local" class="form-control" id="dataFim" required>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-between mt-3">
+                        <div></div>
+                        <button type="submit" class="btn btn-primary">
+                            Próximo <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Step 2: Candidatos -->
+        <div id="step2" class="step-content" style="display: none;">
+            <div class="card">
+                <div class="d-flex justify-between align-center mb-3">
+                    <h3 style="color: var(--accent-green); margin: 0;">
+                        <i class="fas fa-users"></i> Candidatos
+                    </h3>
+                    <button class="btn btn-primary" onclick="abrirModalCandidato()">
+                        <i class="fas fa-plus"></i> Adicionar
+                    </button>
+                </div>
+
+                <div id="listaCandidatos">
+                    <p style="text-align: center; color: var(--text-muted);">Nenhum candidato cadastrado</p>
+                </div>
+
+                <div class="d-flex justify-between mt-3">
+                    <button class="btn btn-secondary" onclick="voltarStep(1)">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </button>
+                    <button class="btn btn-primary" onclick="avancarStep(3)">
+                        Próximo <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Revisão -->
+        <div id="step3" class="step-content" style="display: none;">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem; color: var(--accent-green);">
+                    <i class="fas fa-check-circle"></i> Revisão Final
+                </h3>
+
+                <div id="resumoEleicao"></div>
+
+                <div class="d-flex justify-between mt-3">
+                    <button class="btn btn-secondary" onclick="voltarStep(2)">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </button>
+                    <button class="btn btn-primary" onclick="finalizarConfiguracao()">
+                        <i class="fas fa-paper-plane"></i> Finalizar e Convocar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+}
+.step.active {
+    color: var(--accent-green);
+}
+.step.completed {
+    color: var(--text-secondary);
+}
+.step-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.step.active .step-number {
+    background: var(--accent-green);
+    color: #fff;
+}
+</style>
+
+<!-- Modal Candidato -->
+<div id="modalCandidato" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;">Adicionar Candidato</h3>
+        <form id="formCandidato">
+            <div class="form-group">
+                <label class="form-label">Nome *</label>
+                <input type="text" class="form-control" id="candNome" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cargo</label>
+                <input type="text" class="form-control" id="candCargo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" id="candDescricao" rows="2"></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalCandidato()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const eleicaoId = {{ eleicao_id }};
+let eleicao = null;
+let stepAtual = 1;
+
+async function carregarEleicao() {
+    try {
+        eleicao = await AssemblPro.eleicoes.obter(eleicaoId);
+
+        document.getElementById('eleicaoTitulo').textContent = eleicao.titulo;
+        document.getElementById('titulo').value = eleicao.titulo;
+        document.getElementById('descricao').value = eleicao.descricao || '';
+
+        // Formata datas para input datetime-local
+        document.getElementById('dataInicio').value = formatDateInput(eleicao.data_inicio);
+        document.getElementById('dataFim').value = formatDateInput(eleicao.data_fim);
+
+        renderCandidatos(eleicao.candidatos || []);
+
+    } catch (error) {
+        console.error('Erro ao carregar eleição:', error);
+    }
+}
+
+function formatDateInput(dateStr) {
+    const d = new Date(dateStr);
+    return d.toISOString().slice(0, 16);
+}
+
+function renderCandidatos(candidatos) {
+    const container = document.getElementById('listaCandidatos');
+
+    if (candidatos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Nenhum candidato cadastrado</p>';
+        return;
+    }
+
+    container.innerHTML = candidatos.map(c => `
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: var(--bg-input); border-radius: 8px; margin-bottom: 0.5rem;">
+            <div style="width: 44px; height: 44px; background: var(--bg-card); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--accent-green);">
+                ${c.nome.charAt(0)}
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 500;">${c.nome}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">${c.cargo || 'Sem cargo'}</div>
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="deletarCandidato(${c.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function avancarStep(step) {
+    document.querySelectorAll('.step-content').forEach(s => s.style.display = 'none');
+    document.getElementById(`step${step}`).style.display = 'block';
+
+    document.querySelectorAll('.step').forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i + 1 < step) s.classList.add('completed');
+        if (i + 1 === step) s.classList.add('active');
+    });
+
+    stepAtual = step;
+
+    if (step === 3) {
+        renderResumo();
+    }
+}
+
+function voltarStep(step) {
+    avancarStep(step);
+}
+
+function renderResumo() {
+    const container = document.getElementById('resumoEleicao');
+
+    container.innerHTML = `
+        <div style="background: var(--bg-input); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <h4 style="margin-bottom: 0.5rem;">${eleicao.titulo}</h4>
+            <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">${eleicao.descricao || 'Sem descrição'}</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                <i class="fas fa-calendar"></i> ${new Date(eleicao.data_inicio).toLocaleString()} - ${new Date(eleicao.data_fim).toLocaleString()}
+            </p>
+        </div>
+
+        <h4 style="margin-bottom: 0.5rem;">${eleicao.candidatos?.length || 0} Candidato(s)</h4>
+        ${(eleicao.candidatos || []).map(c => `
+            <div style="display: inline-block; background: var(--bg-input); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.25rem;">
+                ${c.nome}
+            </div>
+        `).join('')}
+    `;
+}
+
+// Form dados gerais
+document.getElementById('formDadosGerais').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+        titulo: document.getElementById('titulo').value,
+        descricao: document.getElementById('descricao').value,
+        data_inicio: new Date(document.getElementById('dataInicio').value).toISOString(),
+        data_fim: new Date(document.getElementById('dataFim').value).toISOString()
+    };
+
+    try {
+        await AssemblPro.eleicoes.atualizar(eleicaoId, data);
+        await carregarEleicao();
+        avancarStep(2);
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao salvar dados', 'error');
+    }
+});
+
+// Modal Candidato
+function abrirModalCandidato() {
+    document.getElementById('formCandidato').reset();
+    document.getElementById('modalCandidato').style.display = 'flex';
+}
+
+function fecharModalCandidato() {
+    document.getElementById('modalCandidato').style.display = 'none';
+}
+
+document.getElementById('formCandidato').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+        eleicao_id: eleicaoId,
+        nome: document.getElementById('candNome').value,
+        cargo: document.getElementById('candCargo').value,
+        descricao: document.getElementById('candDescricao').value
+    };
+
+    try {
+        await AssemblPro.utils.fetch('/candidatos/', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        await carregarEleicao();
+        fecharModalCandidato();
+        AssemblPro.utils.toast('Candidato adicionado!', 'success');
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao adicionar candidato', 'error');
+    }
+});
+
+async function deletarCandidato(id) {
+    if (!confirm('Remover este candidato?')) return;
+
+    try {
+        await AssemblPro.utils.fetch(`/candidatos/${id}/`, { method: 'DELETE' });
+        await carregarEleicao();
+        AssemblPro.utils.toast('Candidato removido!', 'success');
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao remover candidato', 'error');
+    }
+}
+
+async function finalizarConfiguracao() {
+    if (!eleicao.candidatos || eleicao.candidatos.length === 0) {
+        AssemblPro.utils.toast('Adicione pelo menos um candidato', 'error');
+        return;
+    }
+
+    if (!confirm('Deseja finalizar a configuração e convocar os cooperados?')) return;
+
+    try {
+        await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}/convocar/`, { method: 'POST' });
+        AssemblPro.utils.toast('Cooperados convocados com sucesso!', 'success');
+        window.location.href = `/admin/eleicoes/${eleicaoId}`;
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao convocar cooperados', 'error');
+    }
+}
+
+carregarEleicao();
+</script>
+{% endblock %}

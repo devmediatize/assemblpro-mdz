@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header d-flex justify-between align-center">
+            <div>
+                <h1>Eleições</h1>
+                <p class="subtitle">Gerencie todas as eleições do sistema</p>
+            </div>
+            <a href="/admin/eleicoes/criar" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                <span>Nova Eleição</span>
+            </a>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-3">
+            <div class="d-flex gap-2">
+                <button class="btn btn-secondary filter-btn active" data-status="">Todas</button>
+                <button class="btn btn-secondary filter-btn" data-status="configuracao">Configuração</button>
+                <button class="btn btn-secondary filter-btn" data-status="convocacao">Convocação</button>
+                <button class="btn btn-secondary filter-btn" data-status="votacao">Em Votação</button>
+                <button class="btn btn-secondary filter-btn" data-status="encerrada">Encerradas</button>
+            </div>
+        </div>
+
+        <!-- Lista de Eleições -->
+        <div id="eleicoesContainer">
+            <div class="card" style="text-align: center; padding: 3rem;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--accent-green);"></i>
+                <p class="mt-2" style="color: var(--text-secondary);">Carregando eleições...</p>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let statusAtual = '';
+
+async function carregarEleicoes(status = '') {
+    try {
+        const eleicoes = await AssemblPro.eleicoes.listar(status || null);
+        renderEleicoes(eleicoes);
+    } catch (error) {
+        console.error('Erro ao carregar eleições:', error);
+    }
+}
+
+function renderEleicoes(eleicoes) {
+    const container = document.getElementById('eleicoesContainer');
+
+    if (eleicoes.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align: center; padding: 3rem;">
+                <i class="fas fa-inbox fa-3x" style="color: var(--text-muted);"></i>
+                <h3 class="mt-2">Nenhuma eleição encontrada</h3>
+                <p style="color: var(--text-secondary);">Crie uma nova eleição para começar</p>
+                <a href="/admin/eleicoes/criar" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus"></i> Nova Eleição
+                </a>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+            ${eleicoes.map(e => `
+                <div class="card eleicao-card" onclick="window.location.href='/admin/eleicoes/${e.id}'">
+                    <div class="d-flex justify-between align-center mb-2">
+                        <span class="badge badge-${getStatusClass(e.status)}">${formatStatus(e.status)}</span>
+                        <span class="badge badge-secondary">${formatTipo(e.tipo)}</span>
+                    </div>
+                    <h3 style="margin-bottom: 0.5rem;">${e.titulo}</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                        ${e.descricao || 'Sem descrição'}
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-green);">${e.total_candidatos || 0}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Candidatos</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-blue);">${e.total_votos || 0}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Votos</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-purple);">${calcParticipacao(e)}%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Participação</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <i class="fas fa-calendar"></i> ${formatDate(e.data_inicio)} - ${formatDate(e.data_fim)}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function getStatusClass(status) {
+    const classes = {
+        'configuracao': 'secondary',
+        'convocacao': 'info',
+        'votacao': 'success',
+        'encerrada': 'warning',
+        'apurada': 'info'
+    };
+    return classes[status] || 'secondary';
+}
+
+function formatStatus(status) {
+    const labels = {
+        'configuracao': 'Configuração',
+        'convocacao': 'Convocação',
+        'votacao': 'Em Votação',
+        'encerrada': 'Encerrada',
+        'apurada': 'Apurada'
+    };
+    return labels[status] || status;
+}
+
+function formatTipo(tipo) {
+    const labels = {
+        'conselho': 'Conselho',
+        'assembleia': 'Assembleia',
+        'chapa': 'Chapa'
+    };
+    return labels[tipo] || tipo;
+}
+
+function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('pt-BR');
+}
+
+function calcParticipacao(eleicao) {
+    if (!eleicao.total_cooperados || eleicao.total_cooperados === 0) return 0;
+    return Math.round((eleicao.total_votos / eleicao.total_cooperados) * 100);
+}
+
+// Event listeners dos filtros
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        statusAtual = btn.dataset.status;
+        carregarEleicoes(statusAtual);
+    });
+});
+
+// Carrega ao iniciar
+carregarEleicoes();
+</script>
+{% endblock %}

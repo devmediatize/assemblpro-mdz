@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | AssemblPro</title>
+
+    <!-- Fonts: using system fonts (Segoe UI) -->
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css?v=8">
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block body %}{% endblock %}
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggleBtn">
+        <i class="fas fa-sun" id="themeIcon"></i>
+    </button>
+
+    <!-- Toast Container -->
+    <style>
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 9999;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .toast-success i { color: var(--accent-green); }
+        .toast-error i { color: var(--accent-red); }
+    </style>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js?v=15"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

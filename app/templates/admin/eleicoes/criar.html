@@ -1,0 +1,893 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header">
+            <a href="/admin/eleicoes" class="back-link">
+                <i class="fas fa-arrow-left"></i> Voltar para Eleições
+            </a>
+            <h1>Configuração de Eleição</h1>
+            <p class="subtitle">Configure todos os detalhes da nova eleição</p>
+        </div>
+
+        <!-- Steps Indicator -->
+        <div class="steps-container">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Dados Gerais</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Período</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Regras</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">Revisão</div>
+            </div>
+        </div>
+
+        <div class="wizard-container">
+            <!-- Step 1: Dados Gerais -->
+            <div class="wizard-step" id="step1">
+                <div class="wizard-card">
+                    <div class="wizard-header">
+                        <div class="wizard-icon green">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <h2>Dados Gerais</h2>
+                        <p>Defina as informações básicas da eleição</p>
+                    </div>
+
+                    <div class="wizard-body">
+                        <div class="form-group">
+                            <label class="form-label">Título da Eleição *</label>
+                            <input type="text" class="form-control form-control-lg" id="titulo" placeholder="Ex: Eleição do Conselho Fiscal 2026">
+                            <span class="form-hint">Este título será exibido para todos os cooperados</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" id="descricao" rows="4" placeholder="Descreva o objetivo e as regras desta eleição..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Eleição *</label>
+                            <div class="tipo-options">
+                                <label class="tipo-option">
+                                    <input type="radio" name="tipo" value="conselho">
+                                    <div class="tipo-card">
+                                        <i class="fas fa-users-cog"></i>
+                                        <span class="tipo-title">Conselho</span>
+                                        <span class="tipo-desc">Eleição de membros para conselhos</span>
+                                    </div>
+                                </label>
+                                <label class="tipo-option">
+                                    <input type="radio" name="tipo" value="assembleia">
+                                    <div class="tipo-card">
+                                        <i class="fas fa-landmark"></i>
+                                        <span class="tipo-title">Assembleia</span>
+                                        <span class="tipo-desc">Votação de pautas e deliberações</span>
+                                    </div>
+                                </label>
+                                <label class="tipo-option">
+                                    <input type="radio" name="tipo" value="chapa">
+                                    <div class="tipo-card">
+                                        <i class="fas fa-ticket-alt"></i>
+                                        <span class="tipo-title">Chapa</span>
+                                        <span class="tipo-desc">Eleição entre chapas completas</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Período -->
+            <div class="wizard-step" id="step2" style="display: none;">
+                <div class="wizard-card">
+                    <div class="wizard-header">
+                        <div class="wizard-icon blue">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h2>Período de Votação</h2>
+                        <p>Defina quando a votação estará disponível</p>
+                    </div>
+
+                    <div class="wizard-body">
+                        <div class="periodo-grid">
+                            <div class="periodo-card">
+                                <div class="periodo-icon start">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <h4>Início da Votação</h4>
+                                <div class="form-group">
+                                    <label class="form-label">Data</label>
+                                    <input type="date" class="form-control" id="dataInicioDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Hora</label>
+                                    <input type="time" class="form-control" id="dataInicioTime" value="08:00">
+                                </div>
+                            </div>
+
+                            <div class="periodo-divider">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+
+                            <div class="periodo-card">
+                                <div class="periodo-icon end">
+                                    <i class="fas fa-stop-circle"></i>
+                                </div>
+                                <h4>Término da Votação</h4>
+                                <div class="form-group">
+                                    <label class="form-label">Data</label>
+                                    <input type="date" class="form-control" id="dataFimDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Hora</label>
+                                    <input type="time" class="form-control" id="dataFimTime" value="18:00">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="duracao-preview">
+                            <i class="fas fa-clock"></i>
+                            <span>Duração estimada: <strong id="duracaoEstimada">-</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Regras -->
+            <div class="wizard-step" id="step3" style="display: none;">
+                <div class="wizard-card">
+                    <div class="wizard-header">
+                        <div class="wizard-icon purple">
+                            <i class="fas fa-sliders-h"></i>
+                        </div>
+                        <h2>Regras da Votação</h2>
+                        <p>Configure as regras e restrições</p>
+                    </div>
+
+                    <div class="wizard-body">
+                        <div class="regras-grid">
+                            <div class="regra-item">
+                                <div class="regra-header">
+                                    <i class="fas fa-vote-yea"></i>
+                                    <span>Votos por Cooperado</span>
+                                </div>
+                                <div class="regra-control">
+                                    <button type="button" class="btn-counter" onclick="decrementVotos()">-</button>
+                                    <input type="number" class="counter-input" id="maxVotos" value="1" min="1" max="10">
+                                    <button type="button" class="btn-counter" onclick="incrementVotos()">+</button>
+                                </div>
+                                <span class="regra-hint">Quantidade máxima de votos que cada cooperado pode dar</span>
+                            </div>
+
+                            <div class="regra-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="exigeMfa" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <div class="regra-info">
+                                    <span class="regra-title">Autenticação em Dois Fatores (MFA)</span>
+                                    <span class="regra-desc">Exigir código de verificação para votar</span>
+                                </div>
+                            </div>
+
+                            <div class="regra-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="permiteVotoBranco" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <div class="regra-info">
+                                    <span class="regra-title">Voto em Branco</span>
+                                    <span class="regra-desc">Permitir que cooperados votem em branco</span>
+                                </div>
+                            </div>
+
+                            <div class="regra-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="votacaoSecreta" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <div class="regra-info">
+                                    <span class="regra-title">Votação Secreta</span>
+                                    <span class="regra-desc">Votos não podem ser rastreados ao cooperado</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Revisão -->
+            <div class="wizard-step" id="step4" style="display: none;">
+                <div class="wizard-card">
+                    <div class="wizard-header">
+                        <div class="wizard-icon orange">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <h2>Revisão Final</h2>
+                        <p>Confira todos os dados antes de criar</p>
+                    </div>
+
+                    <div class="wizard-body">
+                        <div class="revisao-grid">
+                            <div class="revisao-section">
+                                <h4><i class="fas fa-info-circle"></i> Dados Gerais</h4>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">Título:</span>
+                                    <span class="revisao-value" id="revTitulo">-</span>
+                                </div>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">Tipo:</span>
+                                    <span class="revisao-value" id="revTipo">-</span>
+                                </div>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">Descricao:</span>
+                                    <span class="revisao-value descricao" id="revDescricao">-</span>
+                                </div>
+                            </div>
+
+                            <div class="revisao-section">
+                                <h4><i class="fas fa-calendar-alt"></i> Período</h4>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">Início:</span>
+                                    <span class="revisao-value" id="revInicio">-</span>
+                                </div>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">Término:</span>
+                                    <span class="revisao-value" id="revFim">-</span>
+                                </div>
+                            </div>
+
+                            <div class="revisao-section">
+                                <h4><i class="fas fa-sliders-h"></i> Regras</h4>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">Votos por cooperado:</span>
+                                    <span class="revisao-value" id="revMaxVotos">-</span>
+                                </div>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">MFA:</span>
+                                    <span class="revisao-value" id="revMfa">-</span>
+                                </div>
+                                <div class="revisao-item">
+                                    <span class="revisao-label">Voto em branco:</span>
+                                    <span class="revisao-value" id="revBranco">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alerta-revisao">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Após criar, você poderá adicionar candidatos e configurar mais detalhes.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="wizard-nav">
+                <button type="button" class="btn btn-secondary" id="btnAnterior" style="display: none;">
+                    <i class="fas fa-arrow-left"></i> Anterior
+                </button>
+                <div style="flex: 1;"></div>
+                <button type="button" class="btn btn-primary" id="btnProximo">
+                    Próximo <i class="fas fa-arrow-right"></i>
+                </button>
+                <button type="button" class="btn btn-success" id="btnCriar" style="display: none;">
+                    <i class="fas fa-check"></i> Criar Eleição
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.back-link {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.steps-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.step.active .step-number {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #fff;
+}
+
+.step.completed .step-number {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #fff;
+}
+
+.step-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.step.active .step-label {
+    color: var(--accent-green);
+    font-weight: 500;
+}
+
+.step-line {
+    width: 80px;
+    height: 2px;
+    background: var(--border-color);
+    margin: 0 1rem;
+}
+
+.wizard-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.wizard-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.wizard-header {
+    text-align: center;
+    padding: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.wizard-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+}
+
+.wizard-icon.green { background: rgba(0, 212, 170, 0.15); color: var(--accent-green); }
+.wizard-icon.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+.wizard-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+.wizard-icon.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+
+.wizard-header h2 {
+    margin-bottom: 0.5rem;
+}
+
+.wizard-header p {
+    color: var(--text-muted);
+}
+
+.wizard-body {
+    padding: 2rem;
+}
+
+.form-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.form-control-lg {
+    font-size: 1.1rem;
+    padding: 0.875rem 1rem;
+}
+
+.tipo-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.tipo-option input {
+    display: none;
+}
+
+.tipo-card {
+    padding: 1.5rem;
+    background: var(--bg-input);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.tipo-card:hover {
+    border-color: var(--accent-green);
+}
+
+.tipo-option input:checked + .tipo-card {
+    border-color: var(--accent-green);
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.tipo-card i {
+    font-size: 2rem;
+    color: var(--accent-green);
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.tipo-title {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.tipo-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.periodo-grid {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.periodo-card {
+    flex: 1;
+    padding: 1.5rem;
+    background: var(--bg-input);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.periodo-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+}
+
+.periodo-icon.start { background: rgba(0, 212, 170, 0.15); color: var(--accent-green); }
+.periodo-icon.end { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+
+.periodo-divider {
+    color: var(--text-muted);
+    font-size: 1.5rem;
+}
+
+.duracao-preview {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-input);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.duracao-preview i {
+    margin-right: 0.5rem;
+    color: var(--accent-blue);
+}
+
+.regras-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.regra-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-input);
+    border-radius: 12px;
+}
+
+.regra-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 200px;
+}
+
+.regra-header i {
+    color: var(--accent-green);
+}
+
+.regra-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-counter {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.25rem;
+}
+
+.counter-input {
+    width: 60px;
+    text-align: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.regra-hint {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 2px;
+    top: 2px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+    background: #fff;
+}
+
+.regra-info {
+    flex: 1;
+}
+
+.regra-title {
+    display: block;
+    font-weight: 500;
+}
+
+.regra-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.revisao-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.revisao-section {
+    padding: 1rem;
+    background: var(--bg-input);
+    border-radius: 12px;
+}
+
+.revisao-section h4 {
+    margin-bottom: 1rem;
+    color: var(--accent-green);
+}
+
+.revisao-section h4 i {
+    margin-right: 0.5rem;
+}
+
+.revisao-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.revisao-item:last-child {
+    border-bottom: none;
+}
+
+.revisao-label {
+    color: var(--text-muted);
+}
+
+.revisao-value {
+    font-weight: 500;
+    font-family: inherit;
+}
+
+.revisao-value.descricao {
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-align: right;
+    max-width: 60%;
+}
+
+.alerta-revisao {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    color: var(--accent-orange);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.wizard-nav {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btn-success {
+    background: var(--accent-green);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentStep = 1;
+const totalSteps = 4;
+
+function showStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.wizard-step').forEach(s => s.style.display = 'none');
+
+    // Show current step
+    document.getElementById(`step${step}`).style.display = 'block';
+
+    // Update step indicators
+    document.querySelectorAll('.step').forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i + 1 < step) s.classList.add('completed');
+        if (i + 1 === step) s.classList.add('active');
+    });
+
+    // Update buttons
+    document.getElementById('btnAnterior').style.display = step > 1 ? 'inline-flex' : 'none';
+    document.getElementById('btnProximo').style.display = step < totalSteps ? 'inline-flex' : 'none';
+    document.getElementById('btnCriar').style.display = step === totalSteps ? 'inline-flex' : 'none';
+
+    // Update review on last step
+    if (step === totalSteps) {
+        atualizarRevisao();
+    }
+
+    currentStep = step;
+}
+
+function nextStep() {
+    if (currentStep < totalSteps) {
+        showStep(currentStep + 1);
+    }
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        showStep(currentStep - 1);
+    }
+}
+
+function incrementVotos() {
+    const input = document.getElementById('maxVotos');
+    if (input.value < 10) input.value = parseInt(input.value) + 1;
+}
+
+function decrementVotos() {
+    const input = document.getElementById('maxVotos');
+    if (input.value > 1) input.value = parseInt(input.value) - 1;
+}
+
+function formatarDataBR(dataStr) {
+    if (!dataStr) return '-';
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
+}
+
+function atualizarRevisao() {
+    document.getElementById('revTitulo').textContent = document.getElementById('titulo').value || '-';
+    document.getElementById('revDescricao').textContent = document.getElementById('descricao').value || '-';
+
+    const tipoSelecionado = document.querySelector('input[name="tipo"]:checked');
+    const tipoNomes = { 'conselho': 'Conselho', 'assembleia': 'Assembleia', 'chapa': 'Chapa' };
+    document.getElementById('revTipo').textContent = tipoSelecionado ? tipoNomes[tipoSelecionado.value] || tipoSelecionado.value : '-';
+
+    const dataInicio = document.getElementById('dataInicioDate').value;
+    const horaInicio = document.getElementById('dataInicioTime').value;
+    document.getElementById('revInicio').textContent = dataInicio ? `${formatarDataBR(dataInicio)} as ${horaInicio}` : '-';
+
+    const dataFim = document.getElementById('dataFimDate').value;
+    const horaFim = document.getElementById('dataFimTime').value;
+    document.getElementById('revFim').textContent = dataFim ? `${formatarDataBR(dataFim)} as ${horaFim}` : '-';
+
+    document.getElementById('revMaxVotos').textContent = document.getElementById('maxVotos').value;
+    document.getElementById('revMfa').textContent = document.getElementById('exigeMfa').checked ? 'Sim' : 'Não';
+    document.getElementById('revBranco').textContent = document.getElementById('permiteVotoBranco').checked ? 'Sim' : 'Não';
+}
+
+function calcularDuracao() {
+    const dataInicio = document.getElementById('dataInicioDate').value;
+    const dataFim = document.getElementById('dataFimDate').value;
+
+    if (dataInicio && dataFim) {
+        const inicio = new Date(dataInicio);
+        const fim = new Date(dataFim);
+        const diff = fim - inicio;
+
+        if (diff > 0) {
+            const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            let texto = '';
+            if (dias > 0) texto += `${dias} dia${dias > 1 ? 's' : ''} `;
+            if (horas > 0) texto += `${horas} hora${horas > 1 ? 's' : ''}`;
+
+            document.getElementById('duracaoEstimada').textContent = texto || '0 horas';
+        }
+    }
+}
+
+// Event Listeners
+document.getElementById('btnProximo').addEventListener('click', nextStep);
+document.getElementById('btnAnterior').addEventListener('click', prevStep);
+
+document.getElementById('dataInicioDate').addEventListener('change', calcularDuracao);
+document.getElementById('dataFimDate').addEventListener('change', calcularDuracao);
+
+document.getElementById('btnCriar').addEventListener('click', async () => {
+    const btn = document.getElementById('btnCriar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+
+    const tipoSelecionado = document.querySelector('input[name="tipo"]:checked');
+
+    const dataInicio = `${document.getElementById('dataInicioDate').value}T${document.getElementById('dataInicioTime').value}`;
+    const dataFim = `${document.getElementById('dataFimDate').value}T${document.getElementById('dataFimTime').value}`;
+
+    const data = {
+        titulo: document.getElementById('titulo').value,
+        descricao: document.getElementById('descricao').value,
+        tipo: tipoSelecionado ? tipoSelecionado.value : 'conselho',
+        data_inicio: new Date(dataInicio).toISOString(),
+        data_fim: new Date(dataFim).toISOString(),
+        max_votos: parseInt(document.getElementById('maxVotos').value),
+        exige_mfa: document.getElementById('exigeMfa').checked,
+        permite_voto_branco: document.getElementById('permiteVotoBranco').checked
+    };
+
+    try {
+        const response = await AssemblPro.utils.fetch('/eleicoes/', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Erro ao criar eleição');
+        }
+
+        AssemblPro.utils.toast('Eleição criada com sucesso!', 'success');
+        window.location.href = `/admin/eleicoes/${result.id}/configurar`;
+
+    } catch (error) {
+        AssemblPro.utils.toast(error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Criar Eleição';
+    }
+});
+
+// Set default dates
+const hoje = new Date();
+const amanha = new Date(hoje);
+amanha.setDate(amanha.getDate() + 1);
+
+document.getElementById('dataInicioDate').value = hoje.toISOString().split('T')[0];
+document.getElementById('dataFimDate').value = amanha.toISOString().split('T')[0];
+calcularDuracao();
+
+// Carregar configurações globais para usar como padrão
+async function carregarConfiguracoes() {
+    try {
+        const response = await AssemblPro.utils.fetch('/configuracoes/');
+        if (response.ok) {
+            const configs = await response.json();
+
+            // Aplicar configurações globais como padrão
+            configs.forEach(config => {
+                if (config.chave === 'exigirMfa') {
+                    document.getElementById('exigeMfa').checked = config.valor === 'true';
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+    }
+}
+
+carregarConfiguracoes();
+</script>
+{% endblock %}

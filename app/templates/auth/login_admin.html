@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="login-container">
+    <div class="login-card fade-in">
+        <div class="login-logo">
+            <img src="/static/img/logo.png" alt="Logo" class="logo-img">
+            <p>Votação Eletrônica Segura</p>
+            <span class="admin-badge">Painel Administrativo</span>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <div class="input-group">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" class="form-control" id="email" placeholder="admin@email.com" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Senha</label>
+                <div class="input-group">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" class="form-control" id="senha" placeholder="Digite sua senha" required autocomplete="new-password">
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group remember-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="lembrar">
+                    <span class="checkmark"></span>
+                    Lembrar-me
+                </label>
+            </div>
+
+            <div id="loginError" style="display: none; color: var(--accent-red); font-size: 0.9rem; margin-bottom: 1rem; text-align: center;"></div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="btnLogin" style="background: var(--accent-blue);">
+                <span>Acessar Painel</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+            <img src="/static/img/logoassemblpro.png" alt="AssemblPro" id="loginLogoBottom" style="max-width: 150px; max-height: 50px; object-fit: contain; opacity: 0.8;">
+        </div>
+
+        <p style="text-align: center; margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+            <i class="fas fa-shield-alt"></i> Acesso restrito a administradores
+        </p>
+    </div>
+</div>
+
+<style>
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+}
+.password-toggle:hover {
+    color: var(--text-secondary);
+}
+.admin-badge {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--accent-blue);
+    color: #fff;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.input-group {
+    position: relative;
+}
+.remember-group {
+    margin-bottom: 1.5rem;
+}
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    gap: 0.5rem;
+}
+.checkbox-label input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-blue);
+    cursor: pointer;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Carregar email salvo
+document.addEventListener('DOMContentLoaded', () => {
+    const savedEmail = localStorage.getItem('savedAdminEmail');
+    if (savedEmail) {
+        document.getElementById('email').value = savedEmail;
+        document.getElementById('lembrar').checked = true;
+    }
+});
+
+function togglePassword() {
+    const senhaInput = document.getElementById('senha');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    if (senhaInput.type === 'password') {
+        senhaInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+    } else {
+        senhaInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+    }
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
+    const lembrar = document.getElementById('lembrar').checked;
+    const btnLogin = document.getElementById('btnLogin');
+    const errorDiv = document.getElementById('loginError');
+
+    // Salvar ou remover email
+    if (lembrar) {
+        localStorage.setItem('savedAdminEmail', email);
+    } else {
+        localStorage.removeItem('savedAdminEmail');
+    }
+
+    btnLogin.disabled = true;
+    btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+    errorDiv.style.display = 'none';
+
+    try {
+        const result = await AssemblPro.auth.loginAdmin(email, senha);
+        window.location.href = '/admin/dashboard';
+    } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.style.display = 'block';
+        btnLogin.disabled = false;
+        btnLogin.innerHTML = '<span>Acessar Painel</span><i class="fas fa-arrow-right"></i>';
+    }
+});
+</script>
+{% endblock %}

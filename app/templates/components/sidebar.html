@@ -1,0 +1,60 @@
+<aside class="sidebar">
+    <a href="/admin/dashboard" class="sidebar-logo">
+        <img src="/static/img/logo.png" alt="Logo" class="sidebar-logo-img" id="sidebarLogo">
+    </a>
+
+    <ul class="sidebar-menu">
+        <li>
+            <a href="/admin/dashboard" class="{{ 'active' if active == 'dashboard' else '' }}">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="/admin/eleicoes" class="{{ 'active' if active == 'eleicoes' else '' }}">
+                <i class="fas fa-vote-yea"></i>
+                <span>Eleições</span>
+            </a>
+        </li>
+        <li>
+            <a href="/admin/cooperados" class="{{ 'active' if active == 'cooperados' else '' }}">
+                <i class="fas fa-users"></i>
+                <span>Cooperados</span>
+            </a>
+        </li>
+        <li>
+            <a href="/admin/relatorios" class="{{ 'active' if active == 'relatorios' else '' }}">
+                <i class="fas fa-file-alt"></i>
+                <span>Relatórios</span>
+            </a>
+        </li>
+        <li>
+            <a href="/admin/configuracoes" class="{{ 'active' if active == 'configuracoes' else '' }}">
+                <i class="fas fa-cog"></i>
+                <span>Configurações</span>
+            </a>
+        </li>
+    </ul>
+
+    <div style="position: absolute; bottom: 1.5rem; left: 1.5rem; right: 1.5rem;">
+        <!-- Logo acima do usuário -->
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <img src="/static/img/logoassemblpro.png" alt="Logo" id="sidebarLogoBottom" style="width: 100%; max-height: 80px; object-fit: contain;">
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+            <div class="d-flex align-center gap-2 mb-2">
+                <div style="width: 36px; height: 36px; background: var(--bg-card); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user" style="color: var(--accent-green);"></i>
+                </div>
+                <div>
+                    <div class="user-name" style="font-weight: 500; font-size: 0.9rem;">Carregando...</div>
+                    <div style="color: var(--text-muted); font-size: 0.75rem;">Administrador</div>
+                </div>
+            </div>
+            <button onclick="AssemblPro.auth.logout()" class="btn btn-secondary btn-sm btn-block">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sair</span>
+            </button>
+        </div>
+    </div>
+</aside>

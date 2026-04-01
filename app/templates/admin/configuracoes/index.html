@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header">
+            <h1>Configurações</h1>
+            <p class="subtitle">Personalize o sistema para sua cooperativa</p>
+        </div>
+
+        <div class="config-grid">
+            <!-- Dados da Cooperativa -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-building"></i> Dados da Cooperativa</h3>
+                </div>
+                <form id="formCooperativa" class="config-form">
+                    <div class="form-group">
+                        <label class="form-label">Nome da Cooperativa</label>
+                        <input type="text" class="form-control" id="nomeCooperativa" placeholder="Ex: Cooperativa XYZ">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" id="cnpj" placeholder="00.000.000/0000-00" data-mask="cnpj">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Logomarca - Tema Escuro</label>
+                        <div class="logo-upload">
+                            <div class="logo-preview dark-preview" id="logoDarkPreview">
+                                <img src="/static/img/logo.png" alt="Logo Escuro" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-image\'></i><span>Nenhuma imagem</span>';">
+                            </div>
+                            <div class="logo-actions">
+                                <input type="file" id="logoDarkInput" accept="image/*" style="display: none;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('logoDarkInput').click()">
+                                    <i class="fas fa-upload"></i> Enviar Logo (Escuro)
+                                </button>
+                                <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.5rem;">
+                                    Salva como logo.png
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Logomarca - Tema Claro</label>
+                        <div class="logo-upload">
+                            <div class="logo-preview light-preview" id="logoLightPreview">
+                                <img src="/static/img/logo2.png" alt="Logo Claro" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-image\'></i><span>Nenhuma imagem</span>';">
+                            </div>
+                            <div class="logo-actions">
+                                <input type="file" id="logoLightInput" accept="image/*" style="display: none;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('logoLightInput').click()">
+                                    <i class="fas fa-upload"></i> Enviar Logo (Claro)
+                                </button>
+                                <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.5rem;">
+                                    Salva como logo2.png
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Endereço</label>
+                        <input type="text" class="form-control" id="endereco" placeholder="Rua, número, bairro">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Cidade</label>
+                            <input type="text" class="form-control" id="cidade" placeholder="Cidade">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">UF</label>
+                            <select class="form-control" id="uf">
+                                <option value="">Selecione</option>
+                                <option value="AC">AC</option>
+                                <option value="AL">AL</option>
+                                <option value="AP">AP</option>
+                                <option value="AM">AM</option>
+                                <option value="BA">BA</option>
+                                <option value="CE">CE</option>
+                                <option value="DF">DF</option>
+                                <option value="ES">ES</option>
+                                <option value="GO">GO</option>
+                                <option value="MA">MA</option>
+                                <option value="MT">MT</option>
+                                <option value="MS">MS</option>
+                                <option value="MG">MG</option>
+                                <option value="PA">PA</option>
+                                <option value="PB">PB</option>
+                                <option value="PR">PR</option>
+                                <option value="PE">PE</option>
+                                <option value="PI">PI</option>
+                                <option value="RJ">RJ</option>
+                                <option value="RN">RN</option>
+                                <option value="RS">RS</option>
+                                <option value="RO">RO</option>
+                                <option value="RR">RR</option>
+                                <option value="SC">SC</option>
+                                <option value="SP">SP</option>
+                                <option value="SE">SE</option>
+                                <option value="TO">TO</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Dados
+                    </button>
+                </form>
+            </div>
+
+            <!-- Configurações de Email -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-envelope"></i> Configurações de Email</h3>
+                </div>
+                <form id="formEmail" class="config-form">
+                    <div class="form-group">
+                        <label class="form-label">Servidor SMTP</label>
+                        <input type="text" class="form-control" id="smtpHost" placeholder="smtp.exemplo.com">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Porta</label>
+                            <input type="number" class="form-control" id="smtpPort" placeholder="587">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Segurança</label>
+                            <select class="form-control" id="smtpSecurity">
+                                <option value="tls">TLS</option>
+                                <option value="ssl">SSL</option>
+                                <option value="none">Nenhuma</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email de Envio</label>
+                        <input type="email" class="form-control" id="smtpUser" placeholder="noreply@cooperativa.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Senha</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="smtpPassword" placeholder="********">
+                            <button type="button" class="password-toggle" onclick="toggleSmtpPassword()">
+                                <i class="fas fa-eye" id="smtpEyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary" style="margin-bottom: 1rem;" onclick="testarEmail()">
+                        <i class="fas fa-paper-plane"></i> Testar Conexão
+                    </button>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Email
+                    </button>
+                </form>
+            </div>
+
+            <!-- Configurações de SMS -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-sms"></i> Configurações de SMS</h3>
+                </div>
+                <form id="formSms" class="config-form">
+                    <div class="form-group">
+                        <label class="form-label">Provedor de SMS</label>
+                        <select class="form-control" id="smsProvider">
+                            <option value="">Selecione um provedor</option>
+                            <option value="comtele">Comtele</option>
+                            <option value="twilio">Twilio</option>
+                            <option value="aws_sns">AWS SNS</option>
+                            <option value="zenvia">Zenvia</option>
+                            <option value="totalvoice">TotalVoice</option>
+                            <option value="infobip">Infobip</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Account SID / ID da Conta</label>
+                        <input type="text" class="form-control" id="smsAccountId" placeholder="Seu Account SID ou ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Auth Token / Chave de API</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="smsAuthToken" placeholder="********">
+                            <button type="button" class="password-toggle" onclick="toggleSmsToken()">
+                                <i class="fas fa-eye" id="smsEyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Número de Envio (Remetente)</label>
+                        <input type="text" class="form-control" id="smsFromNumber" placeholder="+5511999999999">
+                        <small class="text-muted">Formato internacional com código do país</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="smsEnabled">
+                            Habilitar envio de SMS
+                        </label>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary" style="margin-bottom: 1rem;" onclick="testarSms()">
+                        <i class="fas fa-paper-plane"></i> Testar Envio
+                    </button>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar SMS
+                    </button>
+                </form>
+            </div>
+
+            <!-- Configurações de Segurança -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-shield-alt"></i> Segurança</h3>
+                </div>
+                <form id="formSeguranca" class="config-form">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="exigirMfa">
+                            Exigir autenticação em dois fatores (MFA)
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="permitirBiometria">
+                            Permitir login por biometria no app
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tempo de sessão (minutos)</label>
+                        <input type="number" class="form-control" id="tempoSessao" value="60" min="5" max="480">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tentativas máximas de login</label>
+                        <input type="number" class="form-control" id="maxTentativas" value="5" min="3" max="10">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Segurança
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<style>
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.logo-upload {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.logo-preview {
+    width: 120px;
+    height: 120px;
+    background: var(--bg-input);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    overflow: hidden;
+}
+
+.logo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.logo-preview i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-green);
+}
+
+.input-group {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+@media (max-width: 1200px) {
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Carregar configurações
+async function carregarConfiguracoes() {
+    try {
+        const response = await AssemblPro.utils.fetch('/configuracoes');
+        if (response.ok) {
+            const configs = await response.json();
+            aplicarConfiguracoes(configs);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+    }
+}
+
+function aplicarConfiguracoes(configs) {
+    configs.forEach(config => {
+        const elemento = document.getElementById(config.chave);
+        if (elemento) {
+            if (elemento.type === 'checkbox') {
+                elemento.checked = config.valor === 'true';
+            } else {
+                elemento.value = config.valor || '';
+            }
+        }
+    });
+}
+
+// Salvar configurações
+async function salvarConfiguracao(chave, valor) {
+    try {
+        // Converte booleanos para string
+        const valorStr = typeof valor === 'boolean' ? valor.toString() : valor;
+
+        const response = await AssemblPro.utils.fetch('/configuracoes', {
+            method: 'POST',
+            body: JSON.stringify({ chave, valor: valorStr })
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.detail || 'Erro ao salvar');
+        }
+
+        AssemblPro.utils.toast('Configuração salva!', 'success');
+    } catch (error) {
+        console.error('Erro:', error);
+        AssemblPro.utils.toast('Erro ao salvar: ' + error.message, 'error');
+    }
+}
+
+// Form handlers
+document.getElementById('formCooperativa').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const campos = ['nomeCooperativa', 'cnpj', 'endereco', 'cidade', 'uf'];
+    for (const campo of campos) {
+        await salvarConfiguracao(campo, document.getElementById(campo).value);
+    }
+});
+
+document.getElementById('formEmail').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const campos = ['smtpHost', 'smtpPort', 'smtpSecurity', 'smtpUser', 'smtpPassword'];
+    for (const campo of campos) {
+        await salvarConfiguracao(campo, document.getElementById(campo).value);
+    }
+});
+
+document.getElementById('formSeguranca').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await salvarConfiguracao('exigirMfa', document.getElementById('exigirMfa').checked);
+    await salvarConfiguracao('permitirBiometria', document.getElementById('permitirBiometria').checked);
+    await salvarConfiguracao('tempoSessao', document.getElementById('tempoSessao').value);
+    await salvarConfiguracao('maxTentativas', document.getElementById('maxTentativas').value);
+});
+
+document.getElementById('formSms').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const campos = ['smsProvider', 'smsAccountId', 'smsAuthToken', 'smsFromNumber'];
+    for (const campo of campos) {
+        await salvarConfiguracao(campo, document.getElementById(campo).value);
+    }
+    await salvarConfiguracao('smsEnabled', document.getElementById('smsEnabled').checked);
+});
+
+// Logo upload - Tema Escuro
+document.getElementById('logoDarkInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+            AssemblPro.utils.toast('Arquivo muito grande (max 2MB)', 'error');
+            return;
+        }
+        await uploadLogo(file, 'logo.png', 'logoDarkPreview');
+    }
+});
+
+// Logo upload - Tema Claro
+document.getElementById('logoLightInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+            AssemblPro.utils.toast('Arquivo muito grande (max 2MB)', 'error');
+            return;
+        }
+        await uploadLogo(file, 'logo2.png', 'logoLightPreview');
+    }
+});
+
+async function uploadLogo(file, filename, previewId) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('filename', filename);
+
+    try {
+        const response = await fetch('/api/upload/logo', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+
+        if (response.ok) {
+            const cacheBust = '?v=' + Date.now();
+
+            // Atualiza preview
+            const preview = document.getElementById(previewId);
+            preview.innerHTML = `<img src="/static/img/${filename}${cacheBust}" alt="Logo">`;
+
+            // Atualiza todas as logos da página (sidebar, etc)
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            const isCurrentThemeLogo = (filename === 'logo.png' && currentTheme === 'dark') ||
+                                       (filename === 'logo2.png' && currentTheme === 'light');
+
+            if (isCurrentThemeLogo) {
+                // Atualiza logos do sidebar
+                const sidebarLogo = document.getElementById('sidebarLogo');
+                if (sidebarLogo) sidebarLogo.src = `/static/img/${filename}${cacheBust}`;
+
+                const sidebarLogoBottom = document.getElementById('sidebarLogoBottom');
+                if (sidebarLogoBottom) sidebarLogoBottom.src = `/static/img/${filename}${cacheBust}`;
+            }
+
+            AssemblPro.utils.toast('Logo salva com sucesso!', 'success');
+        } else {
+            throw new Error('Erro ao fazer upload');
+        }
+    } catch (error) {
+        console.error('Erro no upload:', error);
+        AssemblPro.utils.toast('Erro ao salvar logo', 'error');
+    }
+}
+
+function toggleSmtpPassword() {
+    const input = document.getElementById('smtpPassword');
+    const icon = document.getElementById('smtpEyeIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+async function testarEmail() {
+    const email = prompt('Digite o email para receber o teste:');
+    if (!email) return;
+
+    AssemblPro.utils.toast('Enviando email de teste...', 'info');
+    try {
+        const response = await AssemblPro.utils.fetch('/email/testar', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            if (data.simulado) {
+                AssemblPro.utils.toast('Email simulado! Configure o SMTP para envio real.', 'info');
+            } else {
+                AssemblPro.utils.toast('Email enviado com sucesso!', 'success');
+            }
+        } else {
+            alert('Erro ao enviar email:\n\n' + (data.detail || 'Erro desconhecido'));
+            AssemblPro.utils.toast(data.detail || 'Erro ao enviar email', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao enviar email de teste:\n\n' + error.message);
+        AssemblPro.utils.toast('Erro ao enviar email de teste', 'error');
+    }
+}
+
+function toggleSmsToken() {
+    const input = document.getElementById('smsAuthToken');
+    const icon = document.getElementById('smsEyeIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+async function testarSms() {
+    const telefone = prompt('Digite o telefone para teste (com DDD):\nExemplo: 11999998888');
+    if (!telefone) return;
+
+    AssemblPro.utils.toast('Enviando SMS de teste...', 'info');
+    try {
+        const response = await AssemblPro.utils.fetch('/sms/testar', {
+            method: 'POST',
+            body: JSON.stringify({ telefone: telefone.replace(/\D/g, '') })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            if (data.simulado) {
+                AssemblPro.utils.toast('SMS simulado! Configure o provedor para envio real.', 'info');
+            } else {
+                AssemblPro.utils.toast('SMS enviado com sucesso!', 'success');
+            }
+        } else {
+            alert('Erro ao enviar SMS:\n\n' + (data.detail || 'Erro desconhecido'));
+            AssemblPro.utils.toast(data.detail || 'Erro ao enviar SMS', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao enviar SMS de teste:\n\n' + error.message);
+        AssemblPro.utils.toast('Erro ao enviar SMS de teste', 'error');
+    }
+}
+
+// Carregar ao iniciar
+carregarConfiguracoes();
+</script>
+{% endblock %}

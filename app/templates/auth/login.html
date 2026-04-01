@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="login-container">
+    <div class="login-card fade-in">
+        <div class="login-logo">
+            <img src="/static/img/logo.png" alt="Logo" class="logo-img">
+            <p>Votação Eletrônica Segura</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label">CPF</label>
+                <div class="input-group">
+                    <i class="fas fa-id-card input-icon"></i>
+                    <input type="text" class="form-control" id="cpf" placeholder="000.000.000-00" data-mask="cpf" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Senha</label>
+                <div class="input-group">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" class="form-control" id="senha" placeholder="Digite sua senha" required autocomplete="off">
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group remember-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="lembrar">
+                    <span class="checkmark"></span>
+                    Lembrar-me
+                </label>
+            </div>
+
+            <div id="loginError" style="display: none; color: var(--accent-red); font-size: 0.9rem; margin-bottom: 1rem; text-align: center;"></div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="btnLogin">
+                <span>Entrar com Segurança</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="login-options mt-3">
+            <div class="login-option" onclick="abrirLoginOTP()">
+                <i class="fas fa-envelope"></i>
+                <span>Código via SMS/Email</span>
+            </div>
+        </div>
+
+        <!-- Modal Login OTP -->
+        <div id="modalLoginOTP" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+            <div class="card" style="width: 100%; max-width: 400px; margin: 1rem;">
+                <!-- Etapa 1: Confirmar envio -->
+                <div id="etapaOTP1">
+                    <h3 style="text-align: center; margin-bottom: 1.5rem;">
+                        <i class="fas fa-sms" style="color: var(--accent-green);"></i> Enviar Código
+                    </h3>
+                    <p style="color: var(--text-secondary); text-align: center; margin-bottom: 1rem;">
+                        Enviaremos um código de acesso para:
+                    </p>
+                    <div id="contatosEnvio" style="background: var(--bg-input); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            <i class="fas fa-mobile-alt" style="color: var(--accent-green);"></i>
+                            <span id="telefoneMascarado">Carregando...</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-envelope" style="color: var(--accent-green);"></i>
+                            <span id="emailMascarado">Carregando...</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary" style="flex:1;" onclick="fecharModalOTP()">Cancelar</button>
+                        <button class="btn btn-primary" style="flex:1;" id="btnEnviarOTP" onclick="enviarCodigoLogin()">
+                            <i class="fas fa-paper-plane"></i> Enviar Código
+                        </button>
+                    </div>
+                </div>
+                <!-- Etapa 2: Digitar código -->
+                <div id="etapaOTP2" style="display: none;">
+                    <h3 style="text-align: center; margin-bottom: 1.5rem;">
+                        <i class="fas fa-key" style="color: var(--accent-green);"></i> Digite o Código
+                    </h3>
+                    <p style="color: var(--text-secondary); text-align: center; margin-bottom: 1rem;" id="msgOTPEnviado">
+                        Código enviado!
+                    </p>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="otpCodigo" maxlength="6" placeholder="000000"
+                               style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: bold;">
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+                        Válido por <span id="timerOTP">5:00</span>
+                    </p>
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-secondary" style="flex:1;" onclick="voltarEtapa1()">Voltar</button>
+                        <button class="btn btn-primary" style="flex:1;" id="btnVerificarOTP" onclick="verificarCodigoLogin()">
+                            <i class="fas fa-check"></i> Entrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+            <img src="/static/img/logoassemblpro.png" alt="AssemblPro" id="loginLogoBottom" style="max-width: 150px; max-height: 50px; object-fit: contain; opacity: 0.8;">
+        </div>
+
+        <p style="text-align: center; margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+            <i class="fas fa-shield-alt"></i> Protegido por criptografia ponta a ponta
+        </p>
+    </div>
+</div>
+
+<style>
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+}
+.password-toggle:hover {
+    color: var(--text-secondary);
+}
+.input-group {
+    position: relative;
+}
+.remember-group {
+    margin-bottom: 1.5rem;
+}
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    gap: 0.5rem;
+}
+.checkbox-label input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-green);
+    cursor: pointer;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Carregar CPF salvo
+document.addEventListener('DOMContentLoaded', () => {
+    const savedCpf = localStorage.getItem('savedCpf');
+    if (savedCpf) {
+        document.getElementById('cpf').value = AssemblPro.utils.formatCPF(savedCpf);
+        document.getElementById('lembrar').checked = true;
+    }
+});
+
+function togglePassword() {
+    const senhaInput = document.getElementById('senha');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    if (senhaInput.type === 'password') {
+        senhaInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+    } else {
+        senhaInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+    }
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const cpf = document.getElementById('cpf').value.replace(/\D/g, '');
+    const senha = document.getElementById('senha').value;
+    const lembrar = document.getElementById('lembrar').checked;
+    const btnLogin = document.getElementById('btnLogin');
+    const errorDiv = document.getElementById('loginError');
+
+    // Salvar ou remover CPF
+    if (lembrar) {
+        localStorage.setItem('savedCpf', cpf);
+    } else {
+        localStorage.removeItem('savedCpf');
+    }
+
+    btnLogin.disabled = true;
+    btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+    errorDiv.style.display = 'none';
+
+    try {
+        const result = await AssemblPro.auth.login(cpf, senha);
+
+        if (result.requires_otp) {
+            window.location.href = '/verificar-otp';
+        } else {
+            window.location.href = '/votar';
+        }
+    } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.style.display = 'block';
+        btnLogin.disabled = false;
+        btnLogin.innerHTML = '<span>Entrar com Segurança</span><i class="fas fa-arrow-right"></i>';
+    }
+});
+
+// Login via OTP
+let otpTimerInterval = null;
+let otpTempToken = null;
+let otpCpfAtual = null;
+
+async function abrirLoginOTP() {
+    const cpf = document.getElementById('cpf').value.replace(/\D/g, '');
+
+    if (cpf.length !== 11) {
+        AssemblPro.utils.toast('Informe o CPF primeiro', 'error');
+        document.getElementById('cpf').focus();
+        return;
+    }
+
+    otpCpfAtual = cpf;
+
+    // Busca contatos mascarados
+    document.getElementById('telefoneMascarado').textContent = 'Carregando...';
+    document.getElementById('emailMascarado').textContent = 'Carregando...';
+    document.getElementById('modalLoginOTP').style.display = 'flex';
+    document.getElementById('etapaOTP1').style.display = 'block';
+    document.getElementById('etapaOTP2').style.display = 'none';
+
+    try {
+        const response = await fetch(`/api/auth/contatos-mascarados/${cpf}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('telefoneMascarado').textContent = data.telefone || 'Não cadastrado';
+            document.getElementById('emailMascarado').textContent = data.email || 'Não cadastrado';
+        } else {
+            AssemblPro.utils.toast(data.detail || 'CPF não encontrado', 'error');
+            fecharModalOTP();
+        }
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao buscar dados', 'error');
+        fecharModalOTP();
+    }
+}
+
+function fecharModalOTP() {
+    document.getElementById('modalLoginOTP').style.display = 'none';
+    if (otpTimerInterval) clearInterval(otpTimerInterval);
+}
+
+function voltarEtapa1() {
+    document.getElementById('etapaOTP1').style.display = 'block';
+    document.getElementById('etapaOTP2').style.display = 'none';
+    if (otpTimerInterval) clearInterval(otpTimerInterval);
+}
+
+async function enviarCodigoLogin() {
+    const btn = document.getElementById('btnEnviarOTP');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+    try {
+        const response = await fetch('/api/auth/solicitar-codigo-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cpf: otpCpfAtual })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            otpTempToken = data.temp_token;
+            document.getElementById('msgOTPEnviado').textContent = data.mensagem;
+            document.getElementById('etapaOTP1').style.display = 'none';
+            document.getElementById('etapaOTP2').style.display = 'block';
+            document.getElementById('otpCodigo').value = '';
+            document.getElementById('otpCodigo').focus();
+            iniciarTimerOTP();
+        } else {
+            AssemblPro.utils.toast(data.detail || 'Erro ao enviar código', 'error');
+        }
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao enviar código', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Código';
+    }
+}
+
+function iniciarTimerOTP() {
+    let tempo = 5 * 60;
+    const timerEl = document.getElementById('timerOTP');
+    if (otpTimerInterval) clearInterval(otpTimerInterval);
+
+    otpTimerInterval = setInterval(() => {
+        tempo--;
+        const min = Math.floor(tempo / 60);
+        const seg = tempo % 60;
+        timerEl.textContent = `${min}:${seg.toString().padStart(2, '0')}`;
+        if (tempo <= 0) {
+            clearInterval(otpTimerInterval);
+            AssemblPro.utils.toast('Código expirado', 'error');
+            voltarEtapa1();
+        }
+    }, 1000);
+}
+
+async function verificarCodigoLogin() {
+    const codigo = document.getElementById('otpCodigo').value.trim();
+    if (codigo.length !== 6) {
+        AssemblPro.utils.toast('Digite o código de 6 dígitos', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnVerificarOTP');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+    try {
+        const response = await fetch('/api/auth/verificar-codigo-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ temp_token: otpTempToken, codigo })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            localStorage.setItem('token', data.access_token);
+            localStorage.setItem('user', JSON.stringify({
+                id: data.user_id,
+                nome: data.nome,
+                type: data.user_type
+            }));
+            window.location.href = '/votar';
+        } else {
+            AssemblPro.utils.toast(data.detail || 'Código inválido', 'error');
+        }
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao verificar código', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Entrar';
+    }
+}
+
+</script>
+{% endblock %}

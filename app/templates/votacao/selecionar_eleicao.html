@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div style="min-height: 100vh; padding: 2rem;">
+    <!-- Header -->
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div class="d-flex justify-between align-center mb-4">
+            <a href="/login" style="text-decoration: none;">
+                <img src="/static/img/logo.png" alt="Logo" id="headerLogo" style="height: 45px;" onerror="this.style.display='none'">
+            </a>
+            <div class="d-flex align-center gap-2">
+                <button onclick="AssemblPro.auth.logout()" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </div>
+
+        <!-- Info do Cooperado -->
+        <div class="card mb-4" style="padding: 1rem;">
+            <div class="d-flex align-center gap-3">
+                <div style="width: 56px; height: 56px; background: var(--gradient-green); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user" style="color: #fff; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0;" id="cooperadoNome">Carregando...</h3>
+                    <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;" id="cooperadoCpf"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-header text-center">
+            <h1>Minhas Eleições</h1>
+            <p class="subtitle">Selecione uma eleição para votar</p>
+        </div>
+
+        <!-- Lista de Eleições -->
+        <div id="eleicoesContainer">
+            <div class="card" style="text-align: center; padding: 3rem;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--accent-green);"></i>
+                <p class="mt-2" style="color: var(--text-secondary);">Carregando eleições...</p>
+            </div>
+        </div>
+
+        <!-- Logo Rodapé -->
+        <div style="text-align: center; margin-top: 3rem;">
+            <img src="/static/img/logoassemblpro.png" alt="AssemblPro" id="footerLogo" style="height: 50px;" onerror="this.style.display='none'">
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">
+                <i class="fas fa-shield-alt"></i> Votação Eletrônica Segura
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Atualiza logos baseado no tema
+function atualizarLogos() {
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    const isDark = currentTheme === 'dark';
+    const headerLogo = document.getElementById('headerLogo');
+    const footerLogo = document.getElementById('footerLogo');
+
+    if (headerLogo) headerLogo.src = isDark ? '/static/img/logo.png' : '/static/img/logo2.png';
+    if (footerLogo) footerLogo.src = isDark ? '/static/img/logoassemblpro.png' : '/static/img/logoassemblpro2.png';
+}
+
+async function carregarCooperado() {
+    const user = AssemblPro.auth.getUser();
+    if (!user) {
+        window.location.href = '/login';
+        return null;
+    }
+
+    // Nome já está no localStorage
+    document.getElementById('cooperadoNome').textContent = user.nome;
+
+    // Busca dados completos (incluindo CPF)
+    try {
+        const response = await AssemblPro.utils.fetch(`/cooperados/${user.id}`);
+        if (response.ok) {
+            const cooperado = await response.json();
+            document.getElementById('cooperadoNome').textContent = cooperado.nome;
+            const cpf = cooperado.cpf;
+            const cpfFormatado = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            document.getElementById('cooperadoCpf').textContent = `CPF: ${cpfFormatado}`;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar cooperado:', error);
+    }
+
+    return user;
+}
+
+async function carregarEleicoes() {
+    const user = await carregarCooperado();
+    if (!user) return;
+
+    try {
+        const response = await AssemblPro.utils.fetch(`/eleicoes/ativas/cooperado/${user.id}`);
+        const eleicoes = await response.json();
+        renderEleicoes(eleicoes);
+    } catch (error) {
+        console.error('Erro ao carregar eleições:', error);
+    }
+}
+
+function renderEleicoes(eleicoes) {
+    const container = document.getElementById('eleicoesContainer');
+
+    if (eleicoes.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align: center; padding: 3rem;">
+                <i class="fas fa-inbox fa-3x" style="color: var(--text-muted);"></i>
+                <h3 class="mt-2">Nenhuma eleição disponível</h3>
+                <p style="color: var(--text-secondary);">Você não tem eleições pendentes no momento</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = eleicoes.map(e => `
+        <div class="eleicao-card mb-3" onclick="window.location.href='/votar/${e.id}'">
+            <div class="d-flex justify-between align-center mb-2">
+                <span class="badge badge-success">
+                    <i class="fas fa-circle pulse"></i> Em Votação
+                </span>
+                <span style="color: var(--text-muted); font-size: 0.85rem;">
+                    <i class="fas fa-clock"></i> Até ${formatDate(e.data_fim)}
+                </span>
+            </div>
+            <h3 style="margin-bottom: 0.5rem;">${e.titulo}</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                ${e.descricao || 'Clique para participar desta eleição'}
+            </p>
+            <div class="d-flex align-center justify-between">
+                <span class="badge badge-secondary">${formatTipo(e.tipo)}</span>
+                <span style="color: var(--accent-green); font-weight: 500;">
+                    Votar <i class="fas fa-arrow-right"></i>
+                </span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatTipo(tipo) {
+    const labels = {
+        'conselho': 'Eleição de Conselho',
+        'assembleia': 'Votação em Assembleia',
+        'chapa': 'Eleição de Chapa'
+    };
+    return labels[tipo] || tipo;
+}
+
+// Inicialização
+atualizarLogos();
+carregarEleicoes();
+
+// Observer para mudança de tema
+const observer = new MutationObserver(atualizarLogos);
+observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>
+{% endblock %}

@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header">
+            <h1>Relatórios</h1>
+            <p class="subtitle">Gere relatórios e atas das eleições</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <!-- Ata de Eleição -->
+            <div class="card">
+                <div class="card-icon green mb-3">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3>Ata de Eleição</h3>
+                <p style="color: var(--text-secondary); margin: 1rem 0;">
+                    Documento oficial com resultados, candidatos e participação.
+                </p>
+                <select class="form-control mb-2" id="eleicaoAta">
+                    <option value="">Selecione uma eleição</option>
+                </select>
+                <button class="btn btn-primary btn-block" onclick="gerarAta()">
+                    <i class="fas fa-download"></i> Gerar Ata
+                </button>
+            </div>
+
+            <!-- Participação por Região -->
+            <div class="card">
+                <div class="card-icon blue mb-3">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h3>Participação por Região</h3>
+                <p style="color: var(--text-secondary); margin: 1rem 0;">
+                    Análise de participação por região dos cooperados.
+                </p>
+                <select class="form-control mb-2" id="eleicaoRegiao">
+                    <option value="">Selecione uma eleição</option>
+                </select>
+                <button class="btn btn-primary btn-block" onclick="gerarRelatorioRegiao()">
+                    <i class="fas fa-chart-pie"></i> Gerar Relatório
+                </button>
+            </div>
+
+            <!-- Lista de Cooperados -->
+            <div class="card">
+                <div class="card-icon purple mb-3">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Lista de Cooperados</h3>
+                <p style="color: var(--text-secondary); margin: 1rem 0;">
+                    Exportar lista completa de cooperados cadastrados.
+                </p>
+                <button class="btn btn-primary btn-block" onclick="exportarCooperados()">
+                    <i class="fas fa-file-csv"></i> Exportar CSV
+                </button>
+            </div>
+
+            <!-- Logs de Auditoria -->
+            <div class="card">
+                <div class="card-icon orange mb-3">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Logs de Auditoria</h3>
+                <p style="color: var(--text-secondary); margin: 1rem 0;">
+                    Histórico completo de ações do sistema com hash de integridade.
+                </p>
+                <button class="btn btn-primary btn-block" onclick="verLogs()">
+                    <i class="fas fa-list"></i> Ver Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal de Logs de Auditoria -->
+        <div id="modalLogs" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 1200px; width: 95%;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-shield-alt"></i> Logs de Auditoria</h2>
+                    <button class="btn-close" onclick="fecharModalLogs()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Filtros -->
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-control" id="filtroTipo" onchange="carregarLogs()">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="form-label">Data Inicio</label>
+                            <input type="date" class="form-control" id="filtroDataInicio" onchange="carregarLogs()">
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="form-label">Data Fim</label>
+                            <input type="date" class="form-control" id="filtroDataFim" onchange="carregarLogs()">
+                        </div>
+                        <div style="flex: 1; min-width: 150px; display: flex; align-items: flex-end;">
+                            <button class="btn btn-secondary" onclick="verificarIntegridade()">
+                                <i class="fas fa-check-circle"></i> Verificar Integridade
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estatisticas -->
+                    <div id="statsLogs" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    </div>
+
+                    <!-- Tabela de Logs -->
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Descrição</th>
+                                    <th>Usuario/Cooperado</th>
+                                    <th>IP</th>
+                                    <th>Hash</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaLogs">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginacao -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                        <span id="paginacaoInfo"></span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary btn-sm" id="btnAnterior" onclick="paginaAnterior()">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnProximo" onclick="proximaPagina()">
+                                Proximo <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: var(--bg-card);
+    border-radius: 12px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.modal-header h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.btn-close:hover {
+    color: var(--text-primary);
+}
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table th, .table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+.table tr:hover {
+    background: var(--bg-secondary);
+}
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.badge-login { background: rgba(0, 212, 170, 0.2); color: #00d4aa; }
+.badge-voto { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.badge-eleicao { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+.badge-cooperado { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.badge-sistema { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.badge-default { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+.hash-cell {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.stat-card {
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+.stat-card .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-green);
+}
+.stat-card .label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function carregarEleicoes() {
+    try {
+        const eleicoes = await AssemblPro.eleicoes.listar();
+
+        const selectAta = document.getElementById('eleicaoAta');
+        const selectRegiao = document.getElementById('eleicaoRegiao');
+
+        eleicoes.forEach(e => {
+            const option = `<option value="${e.id}">${e.titulo}</option>`;
+            selectAta.innerHTML += option;
+            selectRegiao.innerHTML += option;
+        });
+    } catch (error) {
+        console.error('Erro ao carregar eleições:', error);
+    }
+}
+
+async function gerarAta() {
+    const eleicaoId = document.getElementById('eleicaoAta').value;
+    if (!eleicaoId) {
+        AssemblPro.utils.toast('Selecione uma eleição', 'error');
+        return;
+    }
+
+    try {
+        const resultado = await AssemblPro.eleicoes.resultado(eleicaoId);
+        const eleicao = await AssemblPro.eleicoes.obter(eleicaoId);
+
+        // Gera HTML da ata
+        const ataHtml = `
+            <html>
+            <head>
+                <title>Ata - ${eleicao.titulo}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; }
+                    h1 { color: #00d4aa; }
+                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                    th { background: #f5f5f5; }
+                </style>
+            </head>
+            <body>
+                <h1>ATA DE ELEIÇÃO</h1>
+                <h2>${eleicao.titulo}</h2>
+                <p><strong>Tipo:</strong> ${eleicao.tipo}</p>
+                <p><strong>Período:</strong> ${new Date(eleicao.data_inicio).toLocaleString()} até ${new Date(eleicao.data_fim).toLocaleString()}</p>
+                <p><strong>Total de Votos:</strong> ${resultado.total_votos}</p>
+                <p><strong>Participação:</strong> ${resultado.participacao}%</p>
+
+                <h3>Resultado</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Posição</th>
+                            <th>Candidato</th>
+                            <th>Votos</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${resultado.candidatos.map((c, i) => `
+                            <tr>
+                                <td>${i + 1}º</td>
+                                <td>${c.nome}</td>
+                                <td>${c.votos}</td>
+                                <td>${c.percentual}%</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <p style="margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px;">
+                    Documento gerado em ${new Date().toLocaleString()} pelo sistema AssemblPro.
+                </p>
+            </body>
+            </html>
+        `;
+
+        // Abre em nova janela para impressão
+        const win = window.open('', '_blank');
+        win.document.write(ataHtml);
+        win.document.close();
+        win.print();
+
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao gerar ata', 'error');
+    }
+}
+
+async function gerarRelatorioRegiao() {
+    const eleicaoId = document.getElementById('eleicaoRegiao').value;
+    if (!eleicaoId) {
+        AssemblPro.utils.toast('Selecione uma eleição', 'error');
+        return;
+    }
+
+    try {
+        const participacao = await AssemblPro.dashboard.participacaoRegiao(eleicaoId);
+        const eleicao = await AssemblPro.eleicoes.obter(eleicaoId);
+
+        // Gera HTML do relatório
+        const relatorioHtml = `
+            <html>
+            <head>
+                <title>Participação por Região - ${eleicao.titulo}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; }
+                    h1 { color: #3b82f6; }
+                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                    th { background: #f5f5f5; }
+                    .bar { height: 20px; background: #3b82f6; border-radius: 4px; }
+                </style>
+            </head>
+            <body>
+                <h1>RELATÓRIO DE PARTICIPAÇÃO POR REGIÃO</h1>
+                <h2>${eleicao.titulo}</h2>
+                <p><strong>Data:</strong> ${new Date().toLocaleString()}</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Região</th>
+                            <th>Votos</th>
+                            <th>Total Aptos</th>
+                            <th>Participação</th>
+                            <th>Gráfico</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${participacao.map(r => `
+                            <tr>
+                                <td>${r.regiao}</td>
+                                <td>${r.votos}</td>
+                                <td>${r.total}</td>
+                                <td>${r.participacao.toFixed(1)}%</td>
+                                <td><div class="bar" style="width: ${r.participacao}%"></div></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <p style="margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px;">
+                    Documento gerado pelo sistema AssemblPro.
+                </p>
+            </body>
+            </html>
+        `;
+
+        const win = window.open('', '_blank');
+        win.document.write(relatorioHtml);
+        win.document.close();
+        win.print();
+
+    } catch (error) {
+        console.error('Erro:', error);
+        AssemblPro.utils.toast('Erro ao gerar relatório', 'error');
+    }
+}
+
+async function exportarCooperados() {
+    try {
+        const response = await AssemblPro.utils.fetch('/cooperados/?limit=10000');
+        const cooperados = await response.json();
+
+        // Gera HTML do relatório PDF
+        const relatorioHtml = `
+            <html>
+            <head>
+                <title>Lista de Cooperados - AssemblPro</title>
+                <style>
+                    @page { size: A4; margin: 20mm; }
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00d4aa; padding-bottom: 20px; margin-bottom: 20px; }
+                    .header img { max-height: 60px; }
+                    .header-text { text-align: right; }
+                    .header-text h1 { color: #00d4aa; margin: 0; font-size: 24px; }
+                    .header-text p { color: #666; margin: 5px 0 0; }
+                    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background: #00d4aa; color: white; }
+                    tr:nth-child(even) { background: #f9f9f9; }
+                    .status-ativo { color: #00d4aa; font-weight: bold; }
+                    .status-inativo { color: #ef4444; font-weight: bold; }
+                    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 11px; }
+                    .total { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 8px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="/static/img/logo.png" alt="Logo">
+                    <div class="header-text">
+                        <h1>LISTA DE COOPERADOS</h1>
+                        <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+                    </div>
+                </div>
+
+                <div class="total">
+                    <strong>Total de Cooperados:</strong> ${cooperados.length} |
+                    <strong>Ativos:</strong> ${cooperados.filter(c => c.ativo).length} |
+                    <strong>Inativos:</strong> ${cooperados.filter(c => !c.ativo).length}
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Região</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${cooperados.map((c, i) => `
+                            <tr>
+                                <td>${i + 1}</td>
+                                <td>${c.nome}</td>
+                                <td>${formatCPF(c.cpf)}</td>
+                                <td>${c.email || '-'}</td>
+                                <td>${c.telefone || '-'}</td>
+                                <td>${c.regiao || '-'}</td>
+                                <td class="${c.ativo ? 'status-ativo' : 'status-inativo'}">${c.ativo ? 'Ativo' : 'Inativo'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <img src="/static/img/logoassemblpro.png" alt="AssemblPro" style="max-height: 30px; margin-bottom: 10px;"><br>
+                    Documento gerado automaticamente pelo sistema AssemblPro - Votação Eletrônica Segura
+                </div>
+            </body>
+            </html>
+        `;
+
+        const win = window.open('', '_blank');
+        win.document.write(relatorioHtml);
+        win.document.close();
+        win.print();
+
+        AssemblPro.utils.toast('Relatório gerado!', 'success');
+    } catch (error) {
+        console.error('Erro:', error);
+        AssemblPro.utils.toast('Erro ao exportar', 'error');
+    }
+}
+
+function formatCPF(cpf) {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+// ========== LOGS DE AUDITORIA ==========
+let paginaAtual = 0;
+const limitePorPagina = 50;
+let totalLogs = 0;
+
+async function verLogs() {
+    document.getElementById('modalLogs').style.display = 'flex';
+    await carregarTiposLog();
+    await carregarEstatisticasLogs();
+    await carregarLogs();
+}
+
+function fecharModalLogs() {
+    document.getElementById('modalLogs').style.display = 'none';
+}
+
+async function carregarTiposLog() {
+    try {
+        const response = await AssemblPro.utils.fetch('/auditoria/tipos/');
+        const tipos = await response.json();
+
+        const select = document.getElementById('filtroTipo');
+        select.innerHTML = '<option value="">Todos</option>';
+        tipos.forEach(tipo => {
+            select.innerHTML += `<option value="${tipo}">${formatarTipoLog(tipo)}</option>`;
+        });
+    } catch (error) {
+        console.error('Erro ao carregar tipos:', error);
+    }
+}
+
+async function carregarEstatisticasLogs() {
+    try {
+        const response = await AssemblPro.utils.fetch('/auditoria/estatisticas/?dias=30');
+        const stats = await response.json();
+
+        document.getElementById('statsLogs').innerHTML = `
+            <div class="stat-card">
+                <div class="value">${stats.total}</div>
+                <div class="label">Total de Logs</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">${stats.no_periodo}</div>
+                <div class="label">Ultimos 30 dias</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">${stats.por_tipo.length}</div>
+                <div class="label">Tipos de Acao</div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Erro ao carregar estatisticas:', error);
+    }
+}
+
+async function carregarLogs() {
+    try {
+        const tipo = document.getElementById('filtroTipo').value;
+        const dataInicio = document.getElementById('filtroDataInicio').value;
+        const dataFim = document.getElementById('filtroDataFim').value;
+
+        let url = `/auditoria/?skip=${paginaAtual * limitePorPagina}&limit=${limitePorPagina}`;
+        if (tipo) url += `&tipo=${tipo}`;
+        if (dataInicio) url += `&data_inicio=${dataInicio}T00:00:00`;
+        if (dataFim) url += `&data_fim=${dataFim}T23:59:59`;
+
+        const response = await AssemblPro.utils.fetch(url);
+        const data = await response.json();
+
+        totalLogs = data.total;
+        renderizarLogs(data.items);
+        atualizarPaginacao();
+    } catch (error) {
+        console.error('Erro ao carregar logs:', error);
+        AssemblPro.utils.toast('Erro ao carregar logs', 'error');
+    }
+}
+
+function renderizarLogs(logs) {
+    const tbody = document.getElementById('tabelaLogs');
+
+    if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum log encontrado</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = logs.map(log => `
+        <tr>
+            <td>${formatarDataHora(log.created_at)}</td>
+            <td><span class="badge ${getBadgeClass(log.tipo)}">${formatarTipoLog(log.tipo)}</span></td>
+            <td>${log.descricao || '-'}</td>
+            <td>${log.usuario_nome || log.cooperado_nome || '-'}</td>
+            <td style="font-family: monospace; font-size: 0.85rem;">${log.ip_address || '-'}</td>
+            <td class="hash-cell" title="${log.hash_integridade}">${log.hash_integridade.substring(0, 12)}...</td>
+        </tr>
+    `).join('');
+}
+
+function formatarDataHora(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
+
+function formatarTipoLog(tipo) {
+    const mapa = {
+        'LOGIN_SUCESSO': 'Login OK',
+        'LOGIN_FALHA': 'Login Falha',
+        'LOGOUT': 'Logout',
+        'OTP_ENVIADO': 'OTP Enviado',
+        'OTP_VERIFICADO': 'OTP Verificado',
+        'ELEICAO_CRIADA': 'Eleicao Criada',
+        'ELEICAO_ATUALIZADA': 'Eleicao Atualizada',
+        'ELEICAO_INICIADA': 'Eleicao Iniciada',
+        'ELEICAO_ENCERRADA': 'Eleicao Encerrada',
+        'ELEICAO_APURADA': 'Eleicao Apurada',
+        'VOTO_REGISTRADO': 'Voto Registrado',
+        'VOTO_BRANCO': 'Voto Branco',
+        'COOPERADO_CRIADO': 'Cooperado Criado',
+        'COOPERADO_ATUALIZADO': 'Cooperado Atualizado',
+        'COOPERADO_REMOVIDO': 'Cooperado Removido',
+        'COOPERADOS_IMPORTADOS': 'Cooperados Importados',
+        'CANDIDATO_CRIADO': 'Candidato Criado',
+        'CANDIDATO_ATUALIZADO': 'Candidato Atualizado',
+        'CANDIDATO_REMOVIDO': 'Candidato Removido',
+        'CONFIGURACAO_ALTERADA': 'Config Alterada',
+        'ERRO_SISTEMA': 'Erro Sistema'
+    };
+    return mapa[tipo] || tipo;
+}
+
+function getBadgeClass(tipo) {
+    if (tipo.includes('LOGIN') || tipo.includes('LOGOUT') || tipo.includes('OTP')) return 'badge-login';
+    if (tipo.includes('VOTO')) return 'badge-voto';
+    if (tipo.includes('ELEICAO')) return 'badge-eleicao';
+    if (tipo.includes('COOPERADO') || tipo.includes('CANDIDATO')) return 'badge-cooperado';
+    if (tipo.includes('ERRO') || tipo.includes('CONFIG')) return 'badge-sistema';
+    return 'badge-default';
+}
+
+function atualizarPaginacao() {
+    const inicio = paginaAtual * limitePorPagina + 1;
+    const fim = Math.min((paginaAtual + 1) * limitePorPagina, totalLogs);
+    document.getElementById('paginacaoInfo').textContent = `Mostrando ${inicio}-${fim} de ${totalLogs}`;
+
+    document.getElementById('btnAnterior').disabled = paginaAtual === 0;
+    document.getElementById('btnProximo').disabled = fim >= totalLogs;
+}
+
+function paginaAnterior() {
+    if (paginaAtual > 0) {
+        paginaAtual--;
+        carregarLogs();
+    }
+}
+
+function proximaPagina() {
+    if ((paginaAtual + 1) * limitePorPagina < totalLogs) {
+        paginaAtual++;
+        carregarLogs();
+    }
+}
+
+async function verificarIntegridade() {
+    try {
+        const response = await AssemblPro.utils.fetch('/auditoria/verificar-integridade/');
+        const resultado = await response.json();
+
+        if (resultado.valido) {
+            AssemblPro.utils.toast(`Integridade OK! ${resultado.total} logs verificados`, 'success');
+        } else {
+            AssemblPro.utils.toast(`Alerta: ${resultado.mensagem}`, 'error');
+        }
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao verificar integridade', 'error');
+    }
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('modalLogs')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modalLogs') {
+        fecharModalLogs();
+    }
+});
+
+carregarEleicoes();
+</script>
+{% endblock %}

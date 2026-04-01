@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header d-flex justify-between align-center">
+            <div>
+                <h1>Cooperados</h1>
+                <p class="subtitle">Gerencie os cooperados do sistema</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-secondary" onclick="abrirModalImportar()">
+                    <i class="fas fa-file-import"></i>
+                    <span>Importar CSV</span>
+                </button>
+                <button class="btn btn-primary" onclick="abrirModalCooperado()">
+                    <i class="fas fa-plus"></i>
+                    <span>Novo Cooperado</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-3">
+            <div class="d-flex gap-2 align-center">
+                <div class="input-group" style="flex: 1;">
+                    <i class="fas fa-search input-icon"></i>
+                    <input type="text" class="form-control" id="busca" placeholder="Buscar por nome ou CPF...">
+                </div>
+                <select class="form-control" id="filtroRegiao" style="width: auto;">
+                    <option value="">Todas as regiões</option>
+                </select>
+                <select class="form-control" id="filtroStatus" style="width: auto;">
+                    <option value="">Todos</option>
+                    <option value="true">Ativos</option>
+                    <option value="false">Inativos</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tabela -->
+        <div class="card">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Email</th>
+                            <th>Região</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cooperadosTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted);">
+                                <i class="fas fa-spinner fa-spin"></i> Carregando...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="paginacao" class="mt-3 d-flex justify-between align-center"></div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Cooperado -->
+<div id="modalCooperado" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;" id="modalCooperadoTitulo">Novo Cooperado</h3>
+        <form id="formCooperado">
+            <input type="hidden" id="cooperadoId">
+            <div class="form-group">
+                <label class="form-label">Nome *</label>
+                <input type="text" class="form-control" id="coopNome" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">CPF *</label>
+                <input type="text" class="form-control" id="coopCpf" data-mask="cpf" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="coopEmail">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Telefone</label>
+                <input type="text" class="form-control" id="coopTelefone" data-mask="telefone">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Região</label>
+                <input type="text" class="form-control" id="coopRegiao">
+            </div>
+            <div class="form-group" id="senhaGroup">
+                <label class="form-label">Senha *</label>
+                <input type="password" class="form-control" id="coopSenha">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalCooperado()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Importar -->
+<div id="modalImportar" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;">Importar Cooperados</h3>
+        <form id="formImportar" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">Arquivo CSV</label>
+                <input type="file" class="form-control" id="arquivoCsv" accept=".csv" required>
+                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
+                    Colunas: nome, cpf, email, telefone, regiao, matricula
+                </small>
+            </div>
+            <div id="importResult" style="display: none; margin-bottom: 1rem;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalImportar()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Importar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let cooperados = [];
+let pagina = 0;
+const limite = 20;
+
+async function carregarCooperados() {
+    try {
+        const regiao = document.getElementById('filtroRegiao').value;
+        const ativo = document.getElementById('filtroStatus').value;
+        const busca = document.getElementById('busca').value.trim();
+
+        let url = `/cooperados/?skip=${pagina * limite}&limit=${limite}`;
+        if (regiao) url += `&regiao=${encodeURIComponent(regiao)}`;
+        if (ativo) url += `&ativo=${ativo}`;
+        if (busca) url += `&busca=${encodeURIComponent(busca)}`;
+
+        const response = await AssemblPro.utils.fetch(url);
+        cooperados = await response.json();
+        renderCooperados(cooperados);
+
+        // Carrega regiões apenas na primeira vez
+        if (!document.getElementById('filtroRegiao').dataset.loaded) {
+            carregarRegioes();
+            document.getElementById('filtroRegiao').dataset.loaded = 'true';
+        }
+
+    } catch (error) {
+        console.error('Erro ao carregar cooperados:', error);
+    }
+}
+
+async function carregarRegioes() {
+    try {
+        const response = await AssemblPro.utils.fetch('/cooperados/regioes/lista/');
+        const data = await response.json();
+
+        const select = document.getElementById('filtroRegiao');
+        select.innerHTML = '<option value="">Todas as regiões</option>';
+        data.regioes.forEach(r => {
+            select.innerHTML += `<option value="${r}">${r}</option>`;
+        });
+    } catch (error) {
+        console.error('Erro ao carregar regiões:', error);
+    }
+}
+
+function renderCooperados(lista) {
+    const tbody = document.getElementById('cooperadosTable');
+
+    if (lista.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted);">
+                    Nenhum cooperado encontrado
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = lista.map(c => `
+        <tr>
+            <td><strong>${c.nome}</strong></td>
+            <td>${formatCPF(c.cpf)}</td>
+            <td>${c.email || '-'}</td>
+            <td>${c.regiao || '-'}</td>
+            <td>
+                <span class="badge badge-${c.ativo ? 'success' : 'danger'}">
+                    ${c.ativo ? 'Ativo' : 'Inativo'}
+                </span>
+            </td>
+            <td>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-secondary" onclick="editarCooperado(${c.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deletarCooperado(${c.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function formatCPF(cpf) {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+// Busca com debounce
+let buscaTimeout;
+document.getElementById('busca').addEventListener('input', (e) => {
+    clearTimeout(buscaTimeout);
+    buscaTimeout = setTimeout(() => {
+        pagina = 0; // Reset para primeira pagina ao buscar
+        carregarCooperados();
+    }, 300); // Aguarda 300ms apos parar de digitar
+});
+
+// Filtros
+document.getElementById('filtroRegiao').addEventListener('change', carregarCooperados);
+document.getElementById('filtroStatus').addEventListener('change', carregarCooperados);
+
+// Modal Cooperado
+function abrirModalCooperado() {
+    document.getElementById('modalCooperadoTitulo').textContent = 'Novo Cooperado';
+    document.getElementById('formCooperado').reset();
+    document.getElementById('cooperadoId').value = '';
+    document.getElementById('senhaGroup').style.display = 'block';
+    document.getElementById('coopSenha').required = true;
+    document.getElementById('modalCooperado').style.display = 'flex';
+}
+
+function fecharModalCooperado() {
+    document.getElementById('modalCooperado').style.display = 'none';
+}
+
+async function editarCooperado(id) {
+    try {
+        const response = await AssemblPro.utils.fetch(`/cooperados/${id}/`);
+        const coop = await response.json();
+
+        document.getElementById('modalCooperadoTitulo').textContent = 'Editar Cooperado';
+        document.getElementById('cooperadoId').value = coop.id;
+        document.getElementById('coopNome').value = coop.nome;
+        document.getElementById('coopCpf').value = formatCPF(coop.cpf);
+        document.getElementById('coopEmail').value = coop.email || '';
+        document.getElementById('coopTelefone').value = formatTelefone(coop.telefone || '');
+        document.getElementById('coopRegiao').value = coop.regiao || '';
+        document.getElementById('senhaGroup').style.display = 'none';
+        document.getElementById('coopSenha').required = false;
+        document.getElementById('modalCooperado').style.display = 'flex';
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao carregar cooperado', 'error');
+    }
+}
+
+function formatTelefone(tel) {
+    if (!tel) return '';
+    tel = tel.replace(/\D/g, '');
+    if (tel.length <= 2) return tel;
+    if (tel.length <= 6) return tel.replace(/(\d{2})(\d{1,4})/, '($1) $2');
+    if (tel.length <= 10) return tel.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+    return tel.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+}
+
+document.getElementById('formCooperado').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById('cooperadoId').value;
+    const telefoneValue = document.getElementById('coopTelefone').value.replace(/\D/g, '');
+
+    const data = {
+        nome: document.getElementById('coopNome').value,
+        cpf: document.getElementById('coopCpf').value.replace(/\D/g, ''),
+        email: document.getElementById('coopEmail').value || null,
+        telefone: telefoneValue || null,
+        regiao: document.getElementById('coopRegiao').value || null
+    };
+
+    if (!id) {
+        data.senha = document.getElementById('coopSenha').value;
+    }
+
+    try {
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/cooperados/${id}/` : '/cooperados/';
+
+        const response = await AssemblPro.utils.fetch(url, {
+            method,
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Erro ao salvar');
+        }
+
+        AssemblPro.utils.toast(id ? 'Cooperado atualizado!' : 'Cooperado criado!', 'success');
+        fecharModalCooperado();
+        carregarCooperados();
+    } catch (error) {
+        AssemblPro.utils.toast(error.message || 'Erro ao salvar cooperado', 'error');
+    }
+});
+
+async function deletarCooperado(id) {
+    if (!confirm('Remover este cooperado?')) return;
+
+    try {
+        await AssemblPro.utils.fetch(`/cooperados/${id}/`, { method: 'DELETE' });
+        AssemblPro.utils.toast('Cooperado removido!', 'success');
+        carregarCooperados();
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao remover cooperado', 'error');
+    }
+}
+
+// Modal Importar
+function abrirModalImportar() {
+    document.getElementById('formImportar').reset();
+    document.getElementById('importResult').style.display = 'none';
+    document.getElementById('modalImportar').style.display = 'flex';
+}
+
+function fecharModalImportar() {
+    document.getElementById('modalImportar').style.display = 'none';
+}
+
+document.getElementById('formImportar').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const file = document.getElementById('arquivoCsv').files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/cooperados/importar/', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        document.getElementById('importResult').style.display = 'block';
+        document.getElementById('importResult').innerHTML = `
+            <div class="badge badge-success">${result.importados} importados</div>
+            ${result.erros.length > 0 ? `<div class="badge badge-danger mt-1">${result.erros.length} erros</div>` : ''}
+        `;
+
+        AssemblPro.utils.toast(`${result.importados} cooperados importados!`, 'success');
+        carregarCooperados();
+
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao importar', 'error');
+    }
+});
+
+// Inicializa
+carregarCooperados();
+</script>
+{% endblock %}

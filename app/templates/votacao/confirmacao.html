@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
+    <div style="max-width: 500px; width: 100%;">
+        <!-- Logo Topo -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <img src="/static/img/logo.png" alt="Logo" id="headerLogo" style="height: 50px;" onerror="this.style.display='none'">
+        </div>
+
+        <div class="card confirmacao-container fade-in">
+            <div class="confirmacao-icon">
+                <i class="fas fa-check"></i>
+            </div>
+
+            <h1 style="color: var(--accent-green);">Voto Registrado com Sucesso!</h1>
+
+            <p style="color: var(--text-secondary); margin: 1rem 0;">
+                Seu voto foi computado e criptografado. Guarde o código abaixo para verificação.
+            </p>
+
+            <div id="eleicaoNome" style="font-weight: 600; margin-bottom: 1rem;"></div>
+
+            <div class="confirmacao-hash" id="hashVoto">
+                {{ hash_voto }}
+            </div>
+
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                <i class="fas fa-shield-alt"></i> Este é seu comprovante de votação
+            </p>
+
+            <div style="margin-top: 2rem;">
+                <button class="btn btn-primary btn-lg btn-block" onclick="copiarHash()">
+                    <i class="fas fa-copy"></i>
+                    <span>Copiar Comprovante</span>
+                </button>
+
+                <a href="/votar" class="btn btn-secondary btn-block mt-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Voltar às Eleições</span>
+                </a>
+            </div>
+
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center;">
+                    <i class="fas fa-lock"></i> Auditado por blockchain<br>
+                    Votação realizada em <span id="dataVoto"></span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Logo Rodapé -->
+        <div style="text-align: center; margin-top: 2rem;">
+            <img src="/static/img/logoassemblpro.png" alt="AssemblPro" id="footerLogo" style="height: 50px;" onerror="this.style.display='none'">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const hashVoto = '{{ hash_voto }}';
+
+// Atualiza logos baseado no tema
+function atualizarLogos() {
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    const isDark = currentTheme === 'dark';
+    const headerLogo = document.getElementById('headerLogo');
+    const footerLogo = document.getElementById('footerLogo');
+
+    if (headerLogo) headerLogo.src = isDark ? '/static/img/logo.png' : '/static/img/logo2.png';
+    if (footerLogo) footerLogo.src = isDark ? '/static/img/logoassemblpro.png' : '/static/img/logoassemblpro2.png';
+}
+
+async function carregarComprovante() {
+    try {
+        const response = await AssemblPro.votos.verificarComprovante(hashVoto);
+
+        document.getElementById('eleicaoNome').textContent = response.eleicao;
+        document.getElementById('dataVoto').textContent = new Date(response.data_voto).toLocaleString('pt-BR');
+
+    } catch (error) {
+        console.error('Erro ao carregar comprovante:', error);
+    }
+}
+
+function copiarHash() {
+    navigator.clipboard.writeText(hashVoto);
+    AssemblPro.utils.toast('Comprovante copiado!', 'success');
+}
+
+// Inicialização
+atualizarLogos();
+carregarComprovante();
+
+// Observer para mudança de tema
+const observer = new MutationObserver(atualizarLogos);
+observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>
+{% endblock %}

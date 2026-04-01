@@ -1,0 +1,670 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header">
+            <div>
+                <h1>Dashboard de Apuração</h1>
+                <p class="subtitle">Acompanhamento em tempo real</p>
+            </div>
+            <div class="header-actions">
+                <select class="form-control" id="eleicaoSelect" style="min-width: 250px;">
+                    <option value="">Selecione uma eleição</option>
+                </select>
+                <button class="btn btn-secondary" onclick="atualizarDados()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="card stat-card-large">
+                <div class="stat-icon green">
+                    <i class="fas fa-vote-yea"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="totalVotos">0</div>
+                    <div class="stat-label">Votos Computados</div>
+                </div>
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span id="votosHora">0</span>/hora
+                </div>
+            </div>
+
+            <div class="card stat-card-large">
+                <div class="stat-icon blue">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="participacao">0%</div>
+                    <div class="stat-label">Participação</div>
+                </div>
+                <div class="stat-detail">
+                    <span id="votaram">0</span> de <span id="totalAptos">0</span> aptos
+                </div>
+            </div>
+
+            <div class="card stat-card-large">
+                <div class="stat-icon purple">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="tempoRestante">--:--:--</div>
+                    <div class="stat-label">Tempo Restante</div>
+                </div>
+                <div class="stat-detail" id="statusEleicao">
+                    Aguardando seleção
+                </div>
+            </div>
+
+            <div class="card stat-card-large">
+                <div class="stat-icon orange">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="mediaMinuto">0</div>
+                    <div class="stat-label">Votos/Minuto</div>
+                </div>
+                <div class="stat-detail">
+                    Média últimos 10 min
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Gráfico de Resultados -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-bar"></i> Resultado Parcial</h3>
+                    <span class="badge badge-success" id="badgeAtualizado">Atualizado agora</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartResultado"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico de Participação por Região -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-map-marked-alt"></i> Participação por Região</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartRegiao"></canvas>
+                </div>
+            </div>
+
+            <!-- Lista de Candidatos -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-trophy"></i> Ranking de Votos</h3>
+                </div>
+                <div class="ranking-list" id="rankingList">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>Selecione uma eleição</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Atividade Recente -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-history"></i> Atividade Recente</h3>
+                </div>
+                <div class="activity-list" id="activityList">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>Nenhuma atividade</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de Progresso Geral -->
+        <div class="card progress-card">
+            <div class="progress-header">
+                <span>Progresso da Votação</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+            <div class="progress-footer">
+                <span><i class="fas fa-user-check"></i> <span id="progressVotaram">0</span> votaram</span>
+                <span><i class="fas fa-user-clock"></i> <span id="progressPendentes">0</span> pendentes</span>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card-large {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    position: relative;
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.stat-icon.green { background: rgba(0, 212, 170, 0.15); color: var(--accent-green); }
+.stat-icon.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+.stat-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+.stat-icon.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.stat-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.stat-trend {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.stat-trend.up { color: var(--accent-green); }
+.stat-trend.down { color: var(--accent-red); }
+
+.stat-detail {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-card {
+    min-height: 350px;
+}
+
+.chart-container {
+    height: 280px;
+    padding: 1rem;
+}
+
+.ranking-list, .activity-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ranking-item:last-child {
+    border-bottom: none;
+}
+
+.ranking-position {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.ranking-position.first { background: #ffd700; color: #000; }
+.ranking-position.second { background: #c0c0c0; color: #000; }
+.ranking-position.third { background: #cd7f32; color: #fff; }
+
+.ranking-info {
+    flex: 1;
+}
+
+.ranking-name {
+    font-weight: 500;
+}
+
+.ranking-cargo {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.ranking-votes {
+    font-weight: 600;
+    color: var(--accent-green);
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 212, 170, 0.15);
+    color: var(--accent-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.activity-text {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.progress-card {
+    padding: 1.25rem;
+}
+
+.progress-header, .progress-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+}
+
+.progress-header {
+    margin-bottom: 0.75rem;
+}
+
+.progress-footer {
+    margin-top: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.progress-bar-container {
+    height: 12px;
+    background: var(--bg-input);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--gradient-green);
+    border-radius: 6px;
+    transition: width 0.5s ease;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+
+.empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 1400px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let chartResultado = null;
+let chartRegiao = null;
+let eleicaoAtual = null;
+let intervaloAtualizacao = null;
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Dashboard iniciando...');
+    inicializarGraficos();
+    await carregarEleicoes();
+});
+
+async function carregarEleicoes() {
+    const select = document.getElementById('eleicaoSelect');
+
+    try {
+        console.log('Carregando eleições...');
+        const eleicoes = await AssemblPro.eleicoes.listar();
+        console.log('Eleições carregadas:', eleicoes);
+
+        if (!eleicoes || !Array.isArray(eleicoes)) {
+            console.error('Resposta inválida:', eleicoes);
+            return;
+        }
+
+        if (eleicoes.length === 0) {
+            console.log('Nenhuma eleição cadastrada');
+            return;
+        }
+
+        eleicoes.forEach(e => {
+            const option = document.createElement('option');
+            option.value = e.id;
+            option.textContent = `${e.titulo} (${e.status})`;
+            select.appendChild(option);
+        });
+
+        select.addEventListener('change', (e) => {
+            console.log('Eleição selecionada:', e.target.value);
+            if (e.target.value) {
+                selecionarEleicao(parseInt(e.target.value));
+            }
+        });
+
+        // Auto-seleciona primeira eleição ou eleição em votação
+        const emVotacao = eleicoes.find(e => e.status.toLowerCase() === 'votacao');
+        const eleicaoInicial = emVotacao || eleicoes[0];
+
+        if (eleicaoInicial) {
+            console.log('Auto-selecionando eleição:', eleicaoInicial.id);
+            select.value = eleicaoInicial.id;
+            await selecionarEleicao(eleicaoInicial.id);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar eleições:', error);
+        alert('Erro ao carregar eleições: ' + error.message);
+    }
+}
+
+function inicializarGraficos() {
+    // Cores para os gráficos
+    const chartColors = [
+        'rgba(0, 212, 170, 0.8)',
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(236, 72, 153, 0.8)'
+    ];
+    const textColor = '#94a3b8';
+    const gridColor = 'rgba(148, 163, 184, 0.1)';
+
+    // Gráfico de Resultado
+    const ctxResultado = document.getElementById('chartResultado').getContext('2d');
+    chartResultado = new Chart(ctxResultado, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Votos',
+                data: [],
+                backgroundColor: chartColors,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { color: gridColor },
+                    ticks: { color: textColor }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { color: textColor, font: { size: 12 } }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Região
+    const ctxRegiao = document.getElementById('chartRegiao').getContext('2d');
+    chartRegiao = new Chart(ctxRegiao, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: chartColors,
+                borderWidth: 2,
+                borderColor: '#162236'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: textColor,
+                        padding: 15,
+                        font: { size: 12 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function selecionarEleicao(eleicaoId) {
+    console.log('Selecionando eleição:', eleicaoId);
+    eleicaoAtual = eleicaoId;
+
+    // Limpa intervalo anterior
+    if (intervaloAtualizacao) {
+        clearInterval(intervaloAtualizacao);
+    }
+
+    await atualizarDados();
+
+    // Atualiza a cada 10 segundos
+    intervaloAtualizacao = setInterval(atualizarDados, 10000);
+}
+
+async function atualizarDados() {
+    if (!eleicaoAtual) {
+        console.log('Nenhuma eleição selecionada');
+        return;
+    }
+
+    console.log('Atualizando dados da eleição:', eleicaoAtual);
+
+    try {
+        const [eleicao, tempoReal, participacao] = await Promise.all([
+            AssemblPro.eleicoes.obter(eleicaoAtual),
+            AssemblPro.dashboard.tempoReal(eleicaoAtual),
+            AssemblPro.dashboard.participacaoRegiao(eleicaoAtual)
+        ]);
+
+        console.log('Dados recebidos:', { eleicao, tempoReal, participacao });
+
+        atualizarStats(tempoReal, eleicao);
+        atualizarGraficoResultado(tempoReal.candidatos || []);
+        atualizarGraficoRegiao(participacao);
+        atualizarRanking(tempoReal.candidatos || []);
+        atualizarProgresso(tempoReal);
+        calcularTempoRestante(eleicao.data_fim);
+
+        document.getElementById('badgeAtualizado').textContent = 'Atualizado agora';
+    } catch (error) {
+        console.error('Erro ao atualizar dados:', error);
+    }
+}
+
+function atualizarStats(dados, eleicao) {
+    document.getElementById('totalVotos').textContent = dados.total_votos || 0;
+    document.getElementById('votaram').textContent = dados.total_votos || 0;
+    document.getElementById('totalAptos').textContent = dados.total_aptos || 0;
+
+    const participacao = dados.total_aptos > 0
+        ? ((dados.total_votos / dados.total_aptos) * 100).toFixed(1)
+        : 0;
+    document.getElementById('participacao').textContent = participacao + '%';
+
+    const statusLabels = {
+        'votacao': 'Em andamento',
+        'configuracao': 'Configuração',
+        'convocacao': 'Convocação',
+        'encerrada': 'Encerrada',
+        'apurada': 'Apurada'
+    };
+    document.getElementById('statusEleicao').textContent = statusLabels[eleicao.status.toLowerCase()] || eleicao.status;
+
+    document.getElementById('mediaMinuto').textContent = dados.votos_por_minuto || 0;
+    document.getElementById('votosHora').textContent = (dados.votos_por_minuto || 0) * 60;
+}
+
+function atualizarGraficoResultado(candidatos) {
+    if (!chartResultado) return;
+
+    chartResultado.data.labels = candidatos.map(c => c.nome);
+    chartResultado.data.datasets[0].data = candidatos.map(c => c.votos || 0);
+    chartResultado.update();
+}
+
+function atualizarGraficoRegiao(dados) {
+    if (!chartRegiao || !dados || dados.length === 0) return;
+
+    chartRegiao.data.labels = dados.map(d => `${d.regiao} (${d.votos}/${d.total})`);
+    chartRegiao.data.datasets[0].data = dados.map(d => d.total || 1);
+    chartRegiao.update();
+}
+
+function atualizarRanking(candidatos) {
+    const container = document.getElementById('rankingList');
+
+    if (!candidatos || candidatos.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>Nenhum candidato cadastrado</p>
+            </div>
+        `;
+        return;
+    }
+
+    const sorted = [...candidatos].sort((a, b) => (b.votos || 0) - (a.votos || 0));
+
+    container.innerHTML = sorted.map((c, i) => `
+        <div class="ranking-item">
+            <div class="ranking-position ${i === 0 ? 'first' : i === 1 ? 'second' : i === 2 ? 'third' : ''}">
+                ${i + 1}
+            </div>
+            <div class="ranking-info">
+                <div class="ranking-name">${c.nome}</div>
+                <div class="ranking-cargo">${c.cargo || ''}</div>
+            </div>
+            <div class="ranking-votes">${c.votos || 0} votos</div>
+        </div>
+    `).join('');
+}
+
+function atualizarProgresso(dados) {
+    const votaram = dados.total_votos || 0;
+    const total = dados.total_aptos || 0;
+    const pendentes = total - votaram;
+    const percent = total > 0 ? (votaram / total) * 100 : 0;
+
+    document.getElementById('progressBar').style.width = percent + '%';
+    document.getElementById('progressPercent').textContent = percent.toFixed(1) + '%';
+    document.getElementById('progressVotaram').textContent = votaram;
+    document.getElementById('progressPendentes').textContent = pendentes;
+}
+
+function calcularTempoRestante(dataFim) {
+    const fim = new Date(dataFim);
+    const agora = new Date();
+    const diff = fim - agora;
+
+    if (diff <= 0) {
+        document.getElementById('tempoRestante').textContent = 'Encerrada';
+        return;
+    }
+
+    const horas = Math.floor(diff / (1000 * 60 * 60));
+    const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+
+    document.getElementById('tempoRestante').textContent =
+        `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+}
+
+// Atualiza tempo a cada segundo
+setInterval(() => {
+    if (eleicaoAtual) {
+        // Aqui você buscaria a data_fim da eleição atual
+        // Por enquanto, apenas demonstração
+    }
+}, 1000);
+</script>
+{% endblock %}

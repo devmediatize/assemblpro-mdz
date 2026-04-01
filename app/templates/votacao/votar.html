@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div style="min-height: 100vh; padding: 2rem;">
+    <div style="max-width: 600px; margin: 0 auto;">
+        <!-- Header com Logo -->
+        <div class="d-flex justify-between align-center mb-4">
+            <a href="/votar" style="color: var(--text-secondary);">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <img src="/static/img/logo.png" alt="Logo" id="headerLogo" style="height: 40px;" onerror="this.style.display='none'">
+        </div>
+
+        <!-- Info do Cooperado -->
+        <div class="card mb-3" style="padding: 1rem;">
+            <div class="d-flex align-center gap-2">
+                <div style="width: 48px; height: 48px; background: var(--gradient-green); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user" style="color: #fff;"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0;" id="cooperadoNome">Carregando...</h4>
+                    <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;" id="cooperadoCpf"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Título da Eleição -->
+        <div class="text-center mb-4">
+            <h1 id="eleicaoTitulo">Carregando...</h1>
+            <p class="subtitle" id="eleicaoDescricao"></p>
+            <span id="eleicaoInfo" class="badge badge-success"></span>
+        </div>
+
+        <!-- Candidatos -->
+        <div id="candidatosContainer">
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--accent-green);"></i>
+            </div>
+        </div>
+
+        <!-- Botão Confirmar -->
+        <div id="confirmarContainer" style="display: none; margin-top: 2rem;">
+            <button id="btnConfirmar" class="btn btn-primary btn-lg btn-block">
+                <i class="fas fa-check"></i>
+                <span>Confirmar Voto</span>
+            </button>
+            <p style="text-align: center; margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                <i class="fas fa-lock"></i> Seu voto é secreto e criptografado
+            </p>
+        </div>
+
+        <!-- Logo Rodapé -->
+        <div style="text-align: center; margin-top: 3rem;">
+            <img src="/static/img/logoassemblpro.png" alt="AssemblPro" id="footerLogo" style="height: 50px;" onerror="this.style.display='none'">
+        </div>
+    </div>
+</div>
+
+<!-- Modal Solicitar Código -->
+<div id="modalCodigo" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 400px; margin: 2rem; text-align: center;">
+        <div style="width: 80px; height: 80px; background: var(--gradient-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <i class="fas fa-shield-alt" style="font-size: 2rem; color: #fff;"></i>
+        </div>
+        <h2>Verificação de Segurança</h2>
+        <p style="color: var(--text-secondary); margin: 1rem 0;">
+            Enviaremos um código de verificação para:
+        </p>
+        <div id="codigoInfo" style="background: var(--bg-input); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                <i class="fas fa-mobile-alt" style="color: var(--accent-green);"></i>
+                <span id="telefoneMascaradoVoto">Carregando...</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-envelope" style="color: var(--accent-green);"></i>
+                <span id="emailMascaradoVoto">Carregando...</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="fecharModalCodigo()">Cancelar</button>
+            <button class="btn btn-primary" style="flex: 1;" id="btnEnviarCodigo" onclick="enviarCodigo()">
+                <i class="fas fa-paper-plane"></i> Enviar Código
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Verificar Código -->
+<div id="modalVerificar" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 400px; margin: 2rem; text-align: center;">
+        <div style="width: 80px; height: 80px; background: var(--gradient-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <i class="fas fa-sms" style="font-size: 2rem; color: #fff;"></i>
+        </div>
+        <h2>Digite o Código</h2>
+        <p style="color: var(--text-secondary); margin: 1rem 0;" id="msgCodigoEnviado">
+            Código enviado para seu telefone/email
+        </p>
+        <div style="margin: 1.5rem 0;">
+            <input type="text" id="inputCodigo" class="form-control" maxlength="6" placeholder="000000"
+                   style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: bold;">
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+            O código expira em <span id="timerCodigo">5:00</span> minutos
+        </p>
+        <div class="d-flex gap-2">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="fecharModalVerificar()">Cancelar</button>
+            <button class="btn btn-primary" style="flex: 1;" id="btnVerificarCodigo" onclick="verificarCodigo()">
+                <i class="fas fa-check"></i> Verificar
+            </button>
+        </div>
+        <button class="btn btn-link" style="margin-top: 1rem;" id="btnReenviar" onclick="reenviarCodigo()" disabled>
+            Reenviar código em <span id="timerReenviar">60</span>s
+        </button>
+    </div>
+</div>
+
+<!-- Modal Confirmação -->
+<div id="modalConfirmar" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 400px; margin: 2rem; text-align: center;">
+        <div style="width: 80px; height: 80px; background: var(--gradient-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <i class="fas fa-vote-yea" style="font-size: 2rem; color: #fff;"></i>
+        </div>
+        <h2>Confirmar Voto</h2>
+        <p style="color: var(--text-secondary); margin: 1rem 0;">
+            Você está votando em:
+        </p>
+        <div id="resumoVoto" style="background: var(--bg-input); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;"></div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+            <i class="fas fa-exclamation-triangle"></i> Esta ação não pode ser desfeita
+        </p>
+        <div class="d-flex gap-2">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="fecharModalConfirmar()">Voltar</button>
+            <button class="btn btn-primary" style="flex: 1;" onclick="confirmarVotoFinal()">
+                <i class="fas fa-check"></i> Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const eleicaoId = {{ eleicao_id }};
+// Obtém cooperado_id do localStorage (salvo no login)
+const user = AssemblPro.auth.getUser();
+const cooperadoId = user ? user.id : 0;
+let eleicao = null;
+let selecionados = [];
+let timerInterval = null;
+let codigoVerificado = false;
+
+// Redireciona se não estiver logado
+if (!cooperadoId) {
+    window.location.href = '/login';
+}
+
+// Atualiza logos baseado no tema
+function atualizarLogos() {
+    const theme = localStorage.getItem('theme') || 'dark';
+    const isDark = theme === 'dark';
+    const headerLogo = document.getElementById('headerLogo');
+    const footerLogo = document.getElementById('footerLogo');
+
+    if (headerLogo) headerLogo.src = isDark ? '/static/img/logo.png' : '/static/img/logo2.png';
+    if (footerLogo) footerLogo.src = isDark ? '/static/img/logoassemblpro.png' : '/static/img/logoassemblpro2.png';
+}
+
+// Carrega info do cooperado
+async function carregarCooperado() {
+    // Nome já está no localStorage
+    if (user && user.nome) {
+        document.getElementById('cooperadoNome').textContent = user.nome;
+    }
+
+    // Busca dados completos (incluindo CPF) do servidor
+    try {
+        const response = await AssemblPro.utils.fetch(`/cooperados/${cooperadoId}`);
+        if (response.ok) {
+            const cooperado = await response.json();
+            document.getElementById('cooperadoNome').textContent = cooperado.nome;
+
+            // Formata CPF
+            const cpf = cooperado.cpf;
+            const cpfFormatado = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            document.getElementById('cooperadoCpf').textContent = `CPF: ${cpfFormatado}`;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar cooperado:', error);
+    }
+}
+
+async function carregarEleicao() {
+    try {
+        eleicao = await AssemblPro.eleicoes.obter(eleicaoId);
+
+        document.getElementById('eleicaoTitulo').textContent = eleicao.titulo;
+        document.getElementById('eleicaoDescricao').textContent = eleicao.descricao || '';
+        document.getElementById('eleicaoInfo').textContent = `${eleicao.max_votos} voto(s) permitido(s)`;
+
+        renderCandidatos(eleicao.candidatos || []);
+
+    } catch (error) {
+        console.error('Erro ao carregar eleição:', error);
+    }
+}
+
+function renderCandidatos(candidatos) {
+    const container = document.getElementById('candidatosContainer');
+
+    if (candidatos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Nenhum candidato cadastrado</p>';
+        return;
+    }
+
+    container.innerHTML = candidatos.map(c => `
+        <div class="candidato-card mb-2" data-id="${c.id}" onclick="toggleCandidato(${c.id})">
+            <div class="avatar">
+                ${c.foto_url ? `<img src="${c.foto_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : c.nome.charAt(0)}
+            </div>
+            <div class="info">
+                <h4>${c.nome}</h4>
+                <p>${c.cargo || c.descricao || ''}</p>
+            </div>
+            <div class="check">
+                <i class="fas fa-check"></i>
+            </div>
+        </div>
+    `).join('');
+
+    // Opção voto em branco
+    if (eleicao.permite_voto_branco) {
+        container.innerHTML += `
+            <div class="candidato-card mb-2" data-id="branco" onclick="toggleCandidato('branco')">
+                <div class="avatar" style="background: var(--bg-secondary);">
+                    <i class="fas fa-ban" style="color: var(--text-muted);"></i>
+                </div>
+                <div class="info">
+                    <h4>Voto em Branco</h4>
+                    <p>Não votar em nenhum candidato</p>
+                </div>
+                <div class="check">
+                    <i class="fas fa-check"></i>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function toggleCandidato(id) {
+    const card = document.querySelector(`[data-id="${id}"]`);
+
+    if (id === 'branco') {
+        selecionados = ['branco'];
+        document.querySelectorAll('.candidato-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+    } else {
+        const brancoIdx = selecionados.indexOf('branco');
+        if (brancoIdx > -1) {
+            selecionados.splice(brancoIdx, 1);
+            document.querySelector('[data-id="branco"]')?.classList.remove('selected');
+        }
+
+        const idx = selecionados.indexOf(id);
+        if (idx > -1) {
+            selecionados.splice(idx, 1);
+            card.classList.remove('selected');
+        } else {
+            if (selecionados.length < eleicao.max_votos) {
+                selecionados.push(id);
+                card.classList.add('selected');
+            } else if (eleicao.max_votos === 1) {
+                document.querySelectorAll('.candidato-card').forEach(c => c.classList.remove('selected'));
+                selecionados = [id];
+                card.classList.add('selected');
+            } else {
+                AssemblPro.utils.toast(`Máximo de ${eleicao.max_votos} votos permitidos`, 'error');
+            }
+        }
+    }
+
+    document.getElementById('confirmarContainer').style.display = selecionados.length > 0 ? 'block' : 'none';
+    codigoVerificado = false; // Reset quando muda seleção
+}
+
+document.getElementById('btnConfirmar').addEventListener('click', async () => {
+    if (selecionados.length === 0) {
+        AssemblPro.utils.toast('Selecione pelo menos um candidato', 'error');
+        return;
+    }
+
+    // Sempre exige verificação de código para confirmar voto
+    if (!codigoVerificado) {
+        await abrirModalCodigo();
+    } else {
+        mostrarResumoVoto();
+    }
+});
+
+async function abrirModalCodigo() {
+    // Mostra modal com loading
+    document.getElementById('telefoneMascaradoVoto').textContent = 'Carregando...';
+    document.getElementById('emailMascaradoVoto').textContent = 'Carregando...';
+    document.getElementById('modalCodigo').style.display = 'flex';
+
+    try {
+        // Busca CPF do cooperado para obter contatos mascarados
+        const cooperadoResponse = await AssemblPro.utils.fetch(`/cooperados/${cooperadoId}`);
+        if (cooperadoResponse.ok) {
+            const cooperado = await cooperadoResponse.json();
+
+            // Busca contatos mascarados
+            const contatosResponse = await fetch(`/api/auth/contatos-mascarados/${cooperado.cpf}`);
+            if (contatosResponse.ok) {
+                const contatos = await contatosResponse.json();
+                document.getElementById('telefoneMascaradoVoto').textContent = contatos.telefone || 'Não cadastrado';
+                document.getElementById('emailMascaradoVoto').textContent = contatos.email || 'Não cadastrado';
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar contatos:', error);
+        document.getElementById('telefoneMascaradoVoto').textContent = 'Erro ao carregar';
+        document.getElementById('emailMascaradoVoto').textContent = 'Erro ao carregar';
+    }
+}
+
+function fecharModalCodigo() {
+    document.getElementById('modalCodigo').style.display = 'none';
+}
+
+function fecharModalVerificar() {
+    document.getElementById('modalVerificar').style.display = 'none';
+    if (timerInterval) clearInterval(timerInterval);
+}
+
+function fecharModalConfirmar() {
+    document.getElementById('modalConfirmar').style.display = 'none';
+}
+
+async function enviarCodigo() {
+    const btn = document.getElementById('btnEnviarCodigo');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+    try {
+        const response = await AssemblPro.utils.fetch('/votos/solicitar-codigo', {
+            method: 'POST',
+            body: JSON.stringify({
+                eleicao_id: eleicaoId,
+                cooperado_id: cooperadoId
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('modalCodigo').style.display = 'none';
+            document.getElementById('msgCodigoEnviado').textContent = data.mensagem;
+            document.getElementById('modalVerificar').style.display = 'flex';
+            document.getElementById('inputCodigo').focus();
+            iniciarTimer();
+        } else {
+            AssemblPro.utils.toast(data.detail || 'Erro ao enviar código', 'error');
+        }
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao enviar código', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Código';
+    }
+}
+
+function reenviarCodigo() {
+    document.getElementById('modalVerificar').style.display = 'none';
+    if (timerInterval) clearInterval(timerInterval);
+    document.getElementById('modalCodigo').style.display = 'flex';
+}
+
+let reenviarInterval = null;
+
+function iniciarTimer() {
+    let tempoRestante = 5 * 60; // 5 minutos
+    let tempoReenviar = 60; // 60 segundos para poder reenviar
+    const timerEl = document.getElementById('timerCodigo');
+    const btnReenviar = document.getElementById('btnReenviar');
+    const timerReenviarEl = document.getElementById('timerReenviar');
+
+    if (timerInterval) clearInterval(timerInterval);
+    if (reenviarInterval) clearInterval(reenviarInterval);
+
+    // Timer do código (5 min)
+    timerInterval = setInterval(() => {
+        tempoRestante--;
+        const minutos = Math.floor(tempoRestante / 60);
+        const segundos = tempoRestante % 60;
+        timerEl.textContent = `${minutos}:${segundos.toString().padStart(2, '0')}`;
+
+        if (tempoRestante <= 0) {
+            clearInterval(timerInterval);
+            AssemblPro.utils.toast('Código expirado. Solicite um novo.', 'error');
+            fecharModalVerificar();
+        }
+    }, 1000);
+
+    // Timer do reenviar (60s)
+    btnReenviar.disabled = true;
+    timerReenviarEl.textContent = tempoReenviar;
+    btnReenviar.innerHTML = `Reenviar código em <span id="timerReenviar">${tempoReenviar}</span>s`;
+
+    reenviarInterval = setInterval(() => {
+        tempoReenviar--;
+        timerReenviarEl.textContent = tempoReenviar;
+        btnReenviar.innerHTML = `Reenviar código em <span id="timerReenviar">${tempoReenviar}</span>s`;
+
+        if (tempoReenviar <= 0) {
+            clearInterval(reenviarInterval);
+            btnReenviar.disabled = false;
+            btnReenviar.innerHTML = '<i class="fas fa-redo"></i> Reenviar código';
+        }
+    }, 1000);
+}
+
+async function verificarCodigo() {
+    const codigo = document.getElementById('inputCodigo').value.trim();
+
+    if (codigo.length !== 6) {
+        AssemblPro.utils.toast('Digite o código de 6 dígitos', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnVerificarCodigo');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+    try {
+        const response = await AssemblPro.utils.fetch('/votos/verificar-codigo', {
+            method: 'POST',
+            body: JSON.stringify({
+                eleicao_id: eleicaoId,
+                cooperado_id: cooperadoId,
+                codigo: codigo
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            codigoVerificado = true;
+            fecharModalVerificar();
+            // Vai direto pro voto, sem precisar confirmar de novo
+            await confirmarVotoFinal();
+        } else {
+            AssemblPro.utils.toast(data.detail || 'Código inválido', 'error');
+        }
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao verificar código', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Verificar';
+    }
+}
+
+function mostrarResumoVoto() {
+    let resumo = '';
+    if (selecionados.includes('branco')) {
+        resumo = '<strong>Voto em Branco</strong>';
+    } else {
+        const nomes = selecionados.map(id => {
+            const cand = eleicao.candidatos.find(c => c.id === id);
+            return cand ? cand.nome : id;
+        });
+        resumo = nomes.map(n => `<strong>${n}</strong>`).join('<br>');
+    }
+
+    document.getElementById('resumoVoto').innerHTML = resumo;
+    document.getElementById('modalConfirmar').style.display = 'flex';
+}
+
+async function confirmarVotoFinal() {
+    try {
+        let votoData;
+
+        if (selecionados.includes('branco')) {
+            votoData = {
+                eleicao_id: eleicaoId,
+                opcao: 'branco'
+            };
+        } else {
+            votoData = {
+                eleicao_id: eleicaoId,
+                candidato_id: selecionados[0]
+            };
+        }
+
+        const response = await AssemblPro.votos.registrar(votoData);
+        window.location.href = `/votar/confirmacao/${response.hash_voto}`;
+
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao registrar voto', 'error');
+        fecharModalConfirmar();
+    }
+}
+
+// Inicialização
+atualizarLogos();
+carregarCooperado();
+carregarEleicao();
+
+// Observer para mudança de tema
+const observer = new MutationObserver(atualizarLogos);
+observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// Também escuta mudanças no localStorage
+window.addEventListener('storage', (e) => {
+    if (e.key === 'theme') atualizarLogos();
+});
+</script>
+{% endblock %}

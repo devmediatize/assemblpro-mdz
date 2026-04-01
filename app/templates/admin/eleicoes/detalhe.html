@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="content-header">
+            <a href="/admin/eleicoes" style="color: var(--text-secondary); font-size: 0.9rem;">
+                <i class="fas fa-arrow-left"></i> Voltar para Eleições
+            </a>
+            <div class="d-flex justify-between align-center mt-2">
+                <div>
+                    <h1 id="eleicaoTitulo">Carregando...</h1>
+                    <p class="subtitle" id="eleicaoDescricao"></p>
+                </div>
+                <div id="eleicaoAcoes"></div>
+            </div>
+        </div>
+
+        <!-- Status e Info -->
+        <div class="stats-grid">
+            <div class="card">
+                <div class="stat-card">
+                    <div class="card-icon green">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value" id="totalVotos">-</div>
+                        <div class="stat-label">Votos Computados</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-card">
+                    <div class="card-icon blue">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value" id="totalConvocados">-</div>
+                        <div class="stat-label">Convocados</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-card">
+                    <div class="card-icon purple">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value" id="participacao">-</div>
+                        <div class="stat-label">Participação</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-card">
+                    <div class="card-icon orange">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value" id="tempoRestante">-</div>
+                        <div class="stat-label">Tempo Restante</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <!-- Candidatos -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Candidatos</h3>
+                    <button class="btn btn-sm btn-outline" onclick="abrirModalCandidato()">
+                        <i class="fas fa-plus"></i> Adicionar
+                    </button>
+                </div>
+                <div id="listaCandidatos">
+                    <p style="text-align: center; color: var(--text-muted);">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Resultado -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Apuração</h3>
+                </div>
+                <div style="max-height: 250px; display: flex; justify-content: center;">
+                    <canvas id="chartResultado"></canvas>
+                </div>
+                <div id="listaResultado" class="mt-3"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Candidato -->
+<div id="modalCandidato" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;">Adicionar Candidato</h3>
+        <form id="formCandidato">
+            <div class="form-group">
+                <label class="form-label">Nome *</label>
+                <input type="text" class="form-control" id="candNome" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cargo</label>
+                <input type="text" class="form-control" id="candCargo" placeholder="Ex: Presidente">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" id="candDescricao" rows="2"></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalCandidato()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Editar Eleição -->
+<div id="modalEditarEleicao" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
+    <div class="card" style="width: 100%; max-width: 600px; margin: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-edit" style="color: var(--accent-green);"></i> Editar Eleição</h3>
+        <form id="formEditarEleicao">
+            <div class="form-group">
+                <label class="form-label">Título *</label>
+                <input type="text" class="form-control" id="editTitulo" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" id="editDescricao" rows="3"></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Data Início</label>
+                    <input type="datetime-local" class="form-control" id="editDataInicio">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Data Fim</label>
+                    <input type="datetime-local" class="form-control" id="editDataFim">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Máximo de Votos</label>
+                <input type="number" class="form-control" id="editMaxVotos" min="1" max="10" value="1">
+            </div>
+            <div style="display: flex; gap: 2rem; margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="editExigeMfa" style="width: 18px; height: 18px;">
+                    Exigir verificação SMS/Email
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="editVotoBranco" style="width: 18px; height: 18px;">
+                    Permitir voto em branco
+                </label>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalEditar()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const eleicaoId = {{ eleicao_id }};
+let chartResultado = null;
+
+async function carregarEleicao() {
+    try {
+        const eleicao = await AssemblPro.eleicoes.obter(eleicaoId);
+
+        document.getElementById('eleicaoTitulo').textContent = eleicao.titulo;
+        document.getElementById('eleicaoDescricao').textContent = eleicao.descricao || '';
+
+        // Ações baseadas no status
+        renderAcoes(eleicao);
+
+        // Candidatos
+        renderCandidatos(eleicao.candidatos || []);
+
+        // Carrega resultado
+        carregarResultado();
+
+    } catch (error) {
+        console.error('Erro ao carregar eleição:', error);
+    }
+}
+
+async function carregarResultado() {
+    try {
+        const resultado = await AssemblPro.eleicoes.resultado(eleicaoId);
+
+        document.getElementById('totalVotos').textContent = resultado.total_votos;
+        document.getElementById('totalConvocados').textContent = resultado.total_convocados;
+        document.getElementById('participacao').textContent = resultado.participacao + '%';
+
+        // Chart
+        renderChart(resultado.candidatos);
+
+        // Lista
+        renderListaResultado(resultado.candidatos);
+
+    } catch (error) {
+        console.error('Erro ao carregar resultado:', error);
+    }
+}
+
+function renderAcoes(eleicao) {
+    const container = document.getElementById('eleicaoAcoes');
+    let html = '';
+
+    // Botão editar sempre visível (exceto em votação/encerrada)
+    const podeEditar = ['configuracao', 'convocacao'].includes(eleicao.status);
+
+    switch (eleicao.status) {
+        case 'configuracao':
+            html = `
+                <button class="btn btn-secondary mr-2" onclick="editarEleicao()">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button class="btn btn-primary" onclick="convocarCooperados()">
+                    <i class="fas fa-envelope"></i> Convocar Cooperados
+                </button>
+            `;
+            break;
+        case 'convocacao':
+            html = `
+                <button class="btn btn-primary" onclick="iniciarVotacao()">
+                    <i class="fas fa-play"></i> Iniciar Votação
+                </button>
+            `;
+            break;
+        case 'votacao':
+            html = `
+                <span class="badge badge-success pulse" style="padding: 0.75rem 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-circle"></i> Em Votação
+                </span>
+                <button class="btn btn-danger ml-2" onclick="encerrarVotacao()">
+                    <i class="fas fa-stop"></i> Encerrar
+                </button>
+            `;
+            break;
+        default:
+            html = `
+                <span class="badge badge-secondary" style="padding: 0.75rem 1rem;">
+                    ${eleicao.status}
+                </span>
+            `;
+    }
+
+    container.innerHTML = html;
+}
+
+function renderCandidatos(candidatos) {
+    const container = document.getElementById('listaCandidatos');
+
+    if (candidatos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Nenhum candidato cadastrado</p>';
+        return;
+    }
+
+    container.innerHTML = candidatos.map(c => `
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: var(--bg-input); border-radius: 8px; margin-bottom: 0.5rem;">
+            <div style="width: 44px; height: 44px; background: var(--bg-card); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--accent-green);">
+                ${c.nome.charAt(0)}
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 500;">${c.nome}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">${c.cargo || 'Sem cargo'}</div>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="deletarCandidato(${c.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function renderChart(candidatos) {
+    const ctx = document.getElementById('chartResultado').getContext('2d');
+
+    if (chartResultado) {
+        chartResultado.destroy();
+    }
+
+    const cores = ['#00d4aa', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
+
+    chartResultado = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: candidatos.map(c => c.nome),
+            datasets: [{
+                data: candidatos.map(c => c.votos),
+                backgroundColor: cores.slice(0, candidatos.length),
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function renderListaResultado(candidatos) {
+    const container = document.getElementById('listaResultado');
+
+    container.innerHTML = candidatos.map((c, i) => `
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <span style="font-weight: 600; color: var(--accent-green);">${i + 1}º</span>
+            <span style="flex: 1;">${c.nome}</span>
+            <span style="font-weight: 600;">${c.votos} votos</span>
+            <span style="color: var(--text-muted);">(${c.percentual}%)</span>
+        </div>
+    `).join('');
+}
+
+async function convocarCooperados() {
+    if (!confirm('Deseja convocar todos os cooperados para esta eleição?')) return;
+
+    try {
+        const response = await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}/convocar`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+        AssemblPro.utils.toast(`${result.convites_criados} cooperados convocados!`, 'success');
+        carregarEleicao();
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao convocar cooperados', 'error');
+    }
+}
+
+async function iniciarVotacao() {
+    if (!confirm('Deseja iniciar a votação agora?')) return;
+
+    try {
+        await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}/iniciar`, { method: 'POST' });
+        AssemblPro.utils.toast('Votação iniciada!', 'success');
+        carregarEleicao();
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao iniciar votação', 'error');
+    }
+}
+
+async function encerrarVotacao() {
+    if (!confirm('Deseja encerrar a votação?')) return;
+
+    try {
+        await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}/encerrar`, { method: 'POST' });
+        AssemblPro.utils.toast('Votação encerrada!', 'success');
+        carregarEleicao();
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao encerrar votação', 'error');
+    }
+}
+
+// Modal Candidato
+function abrirModalCandidato() {
+    document.getElementById('modalCandidato').style.display = 'flex';
+}
+
+function fecharModalCandidato() {
+    document.getElementById('modalCandidato').style.display = 'none';
+    document.getElementById('formCandidato').reset();
+}
+
+document.getElementById('formCandidato').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+        eleicao_id: eleicaoId,
+        nome: document.getElementById('candNome').value,
+        cargo: document.getElementById('candCargo').value,
+        descricao: document.getElementById('candDescricao').value
+    };
+
+    try {
+        await AssemblPro.utils.fetch('/candidatos', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        AssemblPro.utils.toast('Candidato adicionado!', 'success');
+        fecharModalCandidato();
+        carregarEleicao();
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao adicionar candidato', 'error');
+    }
+});
+
+async function deletarCandidato(id) {
+    if (!confirm('Remover este candidato?')) return;
+
+    try {
+        await AssemblPro.utils.fetch(`/candidatos/${id}`, { method: 'DELETE' });
+        AssemblPro.utils.toast('Candidato removido!', 'success');
+        carregarEleicao();
+    } catch (error) {
+        AssemblPro.utils.toast('Erro ao remover candidato', 'error');
+    }
+}
+
+// Modal Editar Eleição
+let eleicaoAtual = null;
+
+async function editarEleicao() {
+    try {
+        eleicaoAtual = await AssemblPro.eleicoes.obter(eleicaoId);
+
+        document.getElementById('editTitulo').value = eleicaoAtual.titulo || '';
+        document.getElementById('editDescricao').value = eleicaoAtual.descricao || '';
+
+        // Formata datas para datetime-local
+        if (eleicaoAtual.data_inicio) {
+            const dataInicio = new Date(eleicaoAtual.data_inicio);
+            document.getElementById('editDataInicio').value = dataInicio.toISOString().slice(0, 16);
+        }
+        if (eleicaoAtual.data_fim) {
+            const dataFim = new Date(eleicaoAtual.data_fim);
+            document.getElementById('editDataFim').value = dataFim.toISOString().slice(0, 16);
+        }
+
+        document.getElementById('editMaxVotos').value = eleicaoAtual.max_votos || 1;
+        document.getElementById('editExigeMfa').checked = eleicaoAtual.exige_mfa || false;
+        document.getElementById('editVotoBranco').checked = eleicaoAtual.permite_voto_branco || false;
+
+        document.getElementById('modalEditarEleicao').style.display = 'flex';
+    } catch (error) {
+        console.error('Erro ao carregar eleição para edição:', error);
+        AssemblPro.utils.toast('Erro ao carregar dados da eleição', 'error');
+    }
+}
+
+function fecharModalEditar() {
+    document.getElementById('modalEditarEleicao').style.display = 'none';
+}
+
+document.getElementById('formEditarEleicao').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+        titulo: document.getElementById('editTitulo').value,
+        descricao: document.getElementById('editDescricao').value,
+        data_inicio: document.getElementById('editDataInicio').value || null,
+        data_fim: document.getElementById('editDataFim').value || null,
+        max_votos: parseInt(document.getElementById('editMaxVotos').value) || 1,
+        exige_mfa: document.getElementById('editExigeMfa').checked,
+        permite_voto_branco: document.getElementById('editVotoBranco').checked
+    };
+
+    try {
+        await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        AssemblPro.utils.toast('Eleição atualizada com sucesso!', 'success');
+        fecharModalEditar();
+        carregarEleicao();
+    } catch (error) {
+        console.error('Erro ao atualizar eleição:', error);
+        AssemblPro.utils.toast('Erro ao atualizar eleição', 'error');
+    }
+});
+
+// Inicializa
+carregarEleicao();
+
+// Atualiza tempo real a cada 10s se em votação
+setInterval(carregarResultado, 10000);
+</script>
+{% endblock %}
