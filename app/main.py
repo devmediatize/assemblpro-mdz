@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
@@ -36,6 +37,11 @@ app = FastAPI(
     description="Sistema de Votação Eletrônica Segura para Cooperativas",
     lifespan=lifespan
 )
+
+# Proxy headers (Traefik -> FastAPI)
+# Garante que o FastAPI reconheça HTTPS vindo do proxy
+# e gere URLs/redirects com https:// em vez de http://
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # CORS
 app.add_middleware(
