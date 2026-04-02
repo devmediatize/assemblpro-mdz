@@ -20,29 +20,29 @@
 
         <!-- Status e Info -->
         <div class="stats-grid">
-            <div class="card">
+            <a href="/admin/eleicoes/{{ eleicao_id }}/votos" class="card card-link" style="text-decoration: none;">
                 <div class="stat-card">
                     <div class="card-icon green">
                         <i class="fas fa-user-check"></i>
                     </div>
                     <div>
                         <div class="stat-value" id="totalVotos">-</div>
-                        <div class="stat-label">Votos Computados</div>
+                        <div class="stat-label">Votos Computados <i class="fas fa-external-link-alt" style="font-size: 0.7rem; margin-left: 0.25rem;"></i></div>
                     </div>
                 </div>
-            </div>
+            </a>
 
-            <div class="card">
+            <a href="#listaConvocados" class="card card-link" style="text-decoration: none;">
                 <div class="stat-card">
                     <div class="card-icon blue">
                         <i class="fas fa-users"></i>
                     </div>
                     <div>
                         <div class="stat-value" id="totalConvocados">-</div>
-                        <div class="stat-label">Convocados</div>
+                        <div class="stat-label">Convocados <i class="fas fa-arrow-down" style="font-size: 0.7rem; margin-left: 0.25rem;"></i></div>
                     </div>
                 </div>
-            </div>
+            </a>
 
             <div class="card">
                 <div class="stat-card">
@@ -94,6 +94,37 @@
                     <canvas id="chartResultado"></canvas>
                 </div>
                 <div id="listaResultado" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Lista de Convocados -->
+        <div class="card mt-4" id="listaConvocados">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-users" style="color: var(--accent-blue);"></i> Cooperados Convocados</h3>
+                <div class="d-flex gap-2 align-center">
+                    <input type="text" class="form-control" id="searchConvocados" placeholder="Buscar por nome..." style="width: 250px; padding: 0.5rem;">
+                    <span id="convocadosStats" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table" id="convocadosTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="convocadosTableBody">
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                <i class="fas fa-spinner fa-spin"></i> Carregando...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
@@ -170,14 +201,61 @@
 </div>
 {% endblock %}
 
+<style>
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.table th {
+    background: var(--bg-card);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}
+</style>
 {% block scripts %}
 <script>
 const eleicaoId = {{ eleicao_id }};
 let chartResultado = null;
 
+let eleicaoData = null;
+
 async function carregarEleicao() {
     try {
         const eleicao = await AssemblPro.eleicoes.obter(eleicaoId);
+        eleicaoData = eleicao;
 
         document.getElementById('eleicaoTitulo').textContent = eleicao.titulo;
         document.getElementById('eleicaoDescricao').textContent = eleicao.descricao || '';
@@ -191,10 +269,48 @@ async function carregarEleicao() {
         // Carrega resultado
         carregarResultado();
 
+        // Carrega convocados
+        carregarConvocados();
+
+        // Calcula tempo restante
+        calcularTempoRestante(eleicao);
+
     } catch (error) {
         console.error('Erro ao carregar eleição:', error);
     }
 }
+
+function calcularTempoRestante(eleicao) {
+    if (!eleicao.data_fim) {
+        document.getElementById('tempoRestante').textContent = '-';
+        return;
+    }
+
+    const agora = new Date();
+    const dataFim = new Date(eleicao.data_fim);
+    const diff = dataFim - agora;
+
+    if (diff <= 0) {
+        document.getElementById('tempoRestante').textContent = 'Encerrado';
+        return;
+    }
+
+    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    let texto = '';
+    if (dias > 0) texto += `${dias}d `;
+    if (horas > 0 || dias > 0) texto += `${horas}h `;
+    texto += `${minutos}m`;
+
+    document.getElementById('tempoRestante').textContent = texto;
+}
+
+// Atualiza tempo restante a cada minuto
+setInterval(() => {
+    if (eleicaoData) calcularTempoRestante(eleicaoData);
+}, 60000);
 
 async function carregarResultado() {
     try {
@@ -327,6 +443,78 @@ function renderListaResultado(candidatos) {
         </div>
     `).join('');
 }
+
+let convocadosData = [];
+
+async function carregarConvocados() {
+    try {
+        const response = await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}/convocados`);
+        const data = await response.json();
+        convocadosData = data.convocados || [];
+
+        const votaram = convocadosData.filter(c => c.votou).length;
+        document.getElementById('convocadosStats').textContent = `${votaram} de ${convocadosData.length} votaram`;
+
+        renderConvocados(convocadosData);
+    } catch (error) {
+        console.error('Erro ao carregar convocados:', error);
+        document.getElementById('convocadosTableBody').innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    Nenhum cooperado convocado ainda
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function renderConvocados(convocados) {
+    const tbody = document.getElementById('convocadosTableBody');
+
+    if (convocados.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    <i class="fas fa-inbox"></i> Nenhum cooperado convocado
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = convocados.map(c => `
+        <tr>
+            <td>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 32px; height: 32px; background: var(--bg-card); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--accent-blue); font-size: 0.85rem;">
+                        ${c.nome.charAt(0)}
+                    </div>
+                    ${c.nome}
+                </div>
+            </td>
+            <td>${c.cpf}</td>
+            <td>${c.email || '-'}</td>
+            <td>${c.telefone || '-'}</td>
+            <td>
+                ${c.votou
+                    ? '<span class="badge badge-success"><i class="fas fa-check" style="margin-right: 0.35rem;"></i>Votou</span>'
+                    : '<span class="badge badge-secondary"><i class="fas fa-clock" style="margin-right: 0.35rem;"></i>Pendente</span>'
+                }
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Busca de convocados
+document.getElementById('searchConvocados').addEventListener('input', (e) => {
+    const termo = e.target.value.toLowerCase();
+    const filtrados = convocadosData.filter(c =>
+        c.nome.toLowerCase().includes(termo) ||
+        c.cpf.includes(termo) ||
+        (c.email && c.email.toLowerCase().includes(termo))
+    );
+    renderConvocados(filtrados);
+});
 
 async function convocarCooperados() {
     if (!confirm('Deseja convocar todos os cooperados para esta eleição?')) return;

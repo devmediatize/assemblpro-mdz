@@ -123,6 +123,24 @@ async def admin_configuracoes(request: Request):
     )
 
 
+@router.get("/admin/usuarios", response_class=HTMLResponse)
+async def admin_usuarios(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/usuarios/lista.html",
+        context={"title": "Usuários"}
+    )
+
+
+@router.get("/admin/eleicoes/{eleicao_id}/votos", response_class=HTMLResponse)
+async def admin_votos_eleicao(request: Request, eleicao_id: int):
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/votos/lista.html",
+        context={"title": "Votos da Eleição", "eleicao_id": eleicao_id}
+    )
+
+
 # ============ VOTAÇÃO ============
 @router.get("/votar", response_class=HTMLResponse)
 async def votacao_home(request: Request):

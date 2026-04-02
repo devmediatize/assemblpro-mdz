@@ -200,6 +200,18 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--shadow);
 }
 
+.card-link {
+    display: block;
+    cursor: pointer;
+    color: inherit;
+}
+
+.card-link:hover {
+    color: inherit;
+    transform: translateY(-2px);
+    border-color: var(--accent-green);
+}
+
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -341,7 +353,13 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 8px;
     color: var(--text-primary);
     font-size: 1rem;
+    font-family: inherit;
     transition: all 0.2s;
+}
+
+textarea.form-control {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    resize: vertical;
 }
 
 .form-control:focus {
@@ -403,6 +421,7 @@ h1, h2, h3, h4, h5, h6 {
 .badge {
     display: inline-flex;
     align-items: center;
+    gap: 0.35rem;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.8rem;

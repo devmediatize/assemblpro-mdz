@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>Votos da Eleição</h1>
+                <p class="text-muted" id="eleicaoTitulo">Carregando...</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/admin/eleicoes/{{ eleicao_id }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <!-- Resumo -->
+        <div class="stats-grid mb-4">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(0, 212, 170, 0.15);">
+                    <i class="fas fa-vote-yea" style="color: var(--accent-green);"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalVotos">0</h3>
+                    <p>Total de Votos</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(59, 130, 246, 0.15);">
+                    <i class="fas fa-info-circle" style="color: var(--accent-blue);"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="statusEleicao">-</h3>
+                    <p>Status da Eleição</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aviso sobre sigilo -->
+        <div class="alert alert-warning mb-4">
+            <i class="fas fa-shield-alt" style="margin-right: 0.5rem;"></i>
+            <span>Os nomes dos candidatos são exibidos de forma criptografada para preservar o sigilo do voto.</span>
+        </div>
+
+        <!-- Tabela de Votos -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-list"></i> Lista de Votos</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="votosTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cooperado</th>
+                                <th>CPF (Parcial)</th>
+                                <th>Candidato (Criptografado)</th>
+                                <th>Data/Hora</th>
+                                <th>IP</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="votosTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Modal Confirmar Exclusão -->
+<div class="modal" id="modalExcluir">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle" style="color: var(--accent-red);"></i> Confirmar Exclusão</h3>
+            <button class="modal-close" onclick="fecharModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Tem certeza que deseja excluir este voto?</p>
+            <p class="text-muted">Esta ação não pode ser desfeita. O cooperado poderá votar novamente.</p>
+            <div class="alert alert-info mt-3">
+                <strong>Cooperado:</strong> <span id="modalCooperadoNome">-</span><br>
+                <strong>CPF:</strong> <span id="modalCooperadoCpf">-</span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-danger" id="btnConfirmarExclusao">
+                <i class="fas fa-trash"></i> Excluir Voto
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.stat-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.stat-info p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.alert-warning {
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #fbbf24;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.table th {
+    background: var(--bg-card);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.badge-opcao {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-branco {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+
+.badge-candidato {
+    background: rgba(0, 212, 170, 0.15);
+    color: var(--accent-green);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid var(--border-color);
+}
+
+.modal-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 1.25rem;
+}
+
+.modal-footer {
+    padding: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.btn-danger {
+    background: var(--accent-red, #ef4444);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    color: var(--text-primary);
+}
+</style>
+
+<script>
+const eleicaoId = {{ eleicao_id }};
+let votosData = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarVotos();
+});
+
+async function carregarVotos() {
+    try {
+        const response = await fetch(`/api/votos/admin/eleicao/${eleicaoId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+
+        if (!response.ok) throw new Error('Erro ao carregar votos');
+
+        const data = await response.json();
+        votosData = data.votos;
+
+        document.getElementById('eleicaoTitulo').textContent = data.eleicao.titulo;
+        document.getElementById('totalVotos').textContent = data.total_votos;
+        document.getElementById('statusEleicao').textContent = data.eleicao.status;
+
+        renderizarVotos(data.votos);
+    } catch (error) {
+        console.error(error);
+        AssemblPro.utils.toast('Erro ao carregar votos');
+    }
+}
+
+function renderizarVotos(votos) {
+    const tbody = document.getElementById('votosTableBody');
+
+    if (votos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    <i class="fas fa-inbox"></i> Nenhum voto registrado
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = votos.map(voto => `
+        <tr>
+            <td>${voto.id}</td>
+            <td>${voto.cooperado_nome}</td>
+            <td>${voto.cooperado_cpf}</td>
+            <td>
+                ${voto.opcao === 'branco'
+                    ? '<span class="badge-opcao badge-branco">VOTO BRANCO</span>'
+                    : `<span class="badge-opcao badge-candidato"><i class="fas fa-lock" style="margin-right: 0.35rem;"></i>${voto.candidato_nome || voto.chapa_nome || '-'}</span>`
+                }
+            </td>
+            <td>${voto.data_voto ? new Date(voto.data_voto).toLocaleString('pt-BR') : '-'}</td>
+            <td>${voto.ip_address || '-'}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="confirmarExclusao(${voto.id}, '${voto.cooperado_nome}', '${voto.cooperado_cpf}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+let votoParaExcluir = null;
+
+function confirmarExclusao(votoId, cooperadoNome, cooperadoCpf) {
+    votoParaExcluir = votoId;
+    document.getElementById('modalCooperadoNome').textContent = cooperadoNome;
+    document.getElementById('modalCooperadoCpf').textContent = cooperadoCpf;
+    document.getElementById('modalExcluir').classList.add('active');
+}
+
+function fecharModal() {
+    document.getElementById('modalExcluir').classList.remove('active');
+    votoParaExcluir = null;
+}
+
+document.getElementById('btnConfirmarExclusao').addEventListener('click', async () => {
+    if (!votoParaExcluir) return;
+
+    try {
+        const response = await fetch(`/api/votos/admin/${votoParaExcluir}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+
+        if (!response.ok) throw new Error('Erro ao excluir voto');
+
+        AssemblPro.utils.toast('Voto excluído com sucesso');
+        fecharModal();
+        carregarVotos();
+    } catch (error) {
+        console.error(error);
+        AssemblPro.utils.toast('Erro ao excluir voto');
+    }
+});
+
+// Fecha modal ao clicar fora
+document.getElementById('modalExcluir').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) fecharModal();
+});
+</script>
+{% endblock %}

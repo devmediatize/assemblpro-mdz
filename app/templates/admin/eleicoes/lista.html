@@ -20,8 +20,6 @@
         <div class="card mb-3">
             <div class="d-flex gap-2">
                 <button class="btn btn-secondary filter-btn active" data-status="">Todas</button>
-                <button class="btn btn-secondary filter-btn" data-status="configuracao">Configuração</button>
-                <button class="btn btn-secondary filter-btn" data-status="convocacao">Convocação</button>
                 <button class="btn btn-secondary filter-btn" data-status="votacao">Em Votação</button>
                 <button class="btn btn-secondary filter-btn" data-status="encerrada">Encerradas</button>
             </div>
@@ -71,32 +69,41 @@ function renderEleicoes(eleicoes) {
     container.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
             ${eleicoes.map(e => `
-                <div class="card eleicao-card" onclick="window.location.href='/admin/eleicoes/${e.id}'">
+                <div class="card eleicao-card">
                     <div class="d-flex justify-between align-center mb-2">
                         <span class="badge badge-${getStatusClass(e.status)}">${formatStatus(e.status)}</span>
-                        <span class="badge badge-secondary">${formatTipo(e.tipo)}</span>
-                    </div>
-                    <h3 style="margin-bottom: 0.5rem;">${e.titulo}</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
-                        ${e.descricao || 'Sem descrição'}
-                    </p>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                        <div style="text-align: center;">
-                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-green);">${e.total_candidatos || 0}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">Candidatos</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-blue);">${e.total_votos || 0}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">Votos</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-purple);">${calcParticipacao(e)}%</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">Participação</div>
+                        <div class="d-flex gap-1">
+                            <a href="/admin/eleicoes/${e.id}/editar" class="btn btn-sm btn-secondary" onclick="event.stopPropagation();" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="/admin/eleicoes/${e.id}" class="btn btn-sm btn-primary" onclick="event.stopPropagation();" title="Detalhes">
+                                <i class="fas fa-eye"></i>
+                            </a>
                         </div>
                     </div>
-                    <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
-                        <i class="fas fa-calendar"></i> ${formatDate(e.data_inicio)} - ${formatDate(e.data_fim)}
-                    </div>
+                    <a href="/admin/eleicoes/${e.id}" style="text-decoration: none; color: inherit;">
+                        <h3 style="margin-bottom: 0.5rem;">${e.titulo}</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                            ${e.descricao || 'Sem descrição'}
+                        </p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-green);">${e.total_candidatos || 0}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Candidatos</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-blue);">${e.total_votos || 0}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Votos</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-purple);">${calcParticipacao(e)}%</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Participação</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                            <i class="fas fa-calendar"></i> ${formatDate(e.data_inicio)} - ${formatDate(e.data_fim)}
+                        </div>
+                    </a>
                 </div>
             `).join('')}
         </div>

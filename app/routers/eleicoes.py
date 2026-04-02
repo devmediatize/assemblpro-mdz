@@ -113,6 +113,7 @@ async def atualizar_eleicao(
     data: EleicaoUpdate,
     db: AsyncSession = Depends(get_db)
 ):
+    """Atualiza eleição - Admin pode editar a qualquer momento"""
     result = await db.execute(
         select(Eleicao).where(Eleicao.id == eleicao_id)
     )
@@ -124,23 +125,7 @@ async def atualizar_eleicao(
             detail="Eleição não encontrada"
         )
 
-    if eleicao.status in [StatusEleicao.VOTACAO, StatusEleicao.ENCERRADA, StatusEleicao.APURADA]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Não é possível editar eleição em andamento ou encerrada"
-        )
-
-    # Verifica se já tem votos
-    votos_result = await db.execute(
-        select(func.count(Voto.id)).where(Voto.eleicao_id == eleicao_id)
-    )
-    total_votos = votos_result.scalar()
-
-    if total_votos > 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Não é possível editar eleição que já possui votos registrados"
-        )
+    # Admin pode editar a qualquer momento (restrições removidas)
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -384,6 +369,37 @@ async def resultado_eleicao(
         "total_convocados": total_convocados,
         "participacao": round(participacao, 2),
         "candidatos": sorted(candidatos_resultado, key=lambda x: x["votos"], reverse=True)
+    }
+
+
+@router.get("/{eleicao_id}/convocados")
+async def listar_convocados(
+    eleicao_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Lista cooperados convocados para uma eleição"""
+    result = await db.execute(
+        select(ConviteVotacao, Cooperado)
+        .join(Cooperado, ConviteVotacao.cooperado_id == Cooperado.id)
+        .where(ConviteVotacao.eleicao_id == eleicao_id)
+        .order_by(Cooperado.nome)
+    )
+
+    convocados = []
+    for convite, cooperado in result.all():
+        convocados.append({
+            "id": cooperado.id,
+            "nome": cooperado.nome,
+            "cpf": cooperado.cpf[:3] + ".***.***-" + cooperado.cpf[-2:],
+            "email": cooperado.email,
+            "telefone": cooperado.telefone,
+            "votou": convite.votou,
+            "enviado_em": convite.enviado_em.isoformat() if convite.enviado_em else None
+        })
+
+    return {
+        "total": len(convocados),
+        "convocados": convocados
     }
 
 

@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-container">
+    {% include "components/sidebar.html" %}
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>Usuários Administradores</h1>
+                <p class="text-muted">Gerencie os usuários do sistema</p>
+            </div>
+            <button class="btn btn-primary" onclick="abrirModalCriar()">
+                <i class="fas fa-plus"></i> Novo Usuário
+            </button>
+        </div>
+
+        <!-- Tabela de Usuários -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="usuariosTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Admin</th>
+                                <th>Status</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuariosTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Modal Criar/Editar Usuário -->
+<div class="modal" id="modalUsuario">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitulo"><i class="fas fa-user-plus"></i> Novo Usuário</h3>
+            <button class="modal-close" onclick="fecharModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="formUsuario">
+                <input type="hidden" id="usuarioId">
+
+                <div class="form-group">
+                    <label for="nome">Nome *</label>
+                    <input type="text" id="nome" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="senha">Senha <span id="senhaObrigatorio">*</span></label>
+                    <input type="password" id="senha" class="form-control">
+                    <small class="text-muted" id="senhaHint">Mínimo 6 caracteres</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="isAdmin">
+                        <span>Administrador (acesso total)</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="ativo" checked>
+                        <span>Usuário ativo</span>
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarUsuario()">
+                <i class="fas fa-save"></i> Salvar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Exclusão -->
+<div class="modal" id="modalExcluir">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle" style="color: var(--accent-red);"></i> Confirmar Exclusão</h3>
+            <button class="modal-close" onclick="fecharModalExcluir()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Tem certeza que deseja excluir o usuário <strong id="nomeExcluir">-</strong>?</p>
+            <p class="text-muted">Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModalExcluir()">Cancelar</button>
+            <button class="btn btn-danger" id="btnConfirmarExclusao">
+                <i class="fas fa-trash"></i> Excluir
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.table th {
+    background: var(--bg-card);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: rgba(0, 212, 170, 0.15);
+    color: var(--accent-green);
+}
+
+.badge-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.badge-info {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+}
+
+.badge-secondary {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid var(--border-color);
+}
+
+.modal-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 1.25rem;
+}
+
+.modal-footer {
+    padding: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background: var(--accent-red, #ef4444);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+</style>
+
+<script>
+let usuarios = [];
+let modoEdicao = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarUsuarios();
+});
+
+async function carregarUsuarios() {
+    try {
+        const response = await AssemblPro.utils.fetch('/usuarios/');
+
+        if (!response.ok) throw new Error('Erro ao carregar usuários');
+
+        usuarios = await response.json();
+        renderizarUsuarios(usuarios);
+    } catch (error) {
+        console.error(error);
+        AssemblPro.utils.toast('Erro ao carregar usuários', 'error');
+    }
+}
+
+function renderizarUsuarios(lista) {
+    const tbody = document.getElementById('usuariosTableBody');
+
+    if (lista.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    <i class="fas fa-inbox"></i> Nenhum usuário cadastrado
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = lista.map(u => `
+        <tr>
+            <td>${u.id}</td>
+            <td>${u.nome}</td>
+            <td>${u.email}</td>
+            <td>
+                ${u.is_admin
+                    ? '<span class="badge badge-info"><i class="fas fa-crown" style="margin-right: 0.35rem;"></i>Admin</span>'
+                    : '<span class="badge badge-secondary">Usuário</span>'
+                }
+            </td>
+            <td>
+                ${u.ativo
+                    ? '<span class="badge badge-success">Ativo</span>'
+                    : '<span class="badge badge-danger">Inativo</span>'
+                }
+            </td>
+            <td>${new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
+            <td>
+                <button class="btn btn-sm btn-secondary" onclick="editarUsuario(${u.id})" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="confirmarExclusao(${u.id}, '${u.nome}')" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function abrirModalCriar() {
+    modoEdicao = false;
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-user-plus"></i> Novo Usuário';
+    document.getElementById('formUsuario').reset();
+    document.getElementById('usuarioId').value = '';
+    document.getElementById('senhaObrigatorio').style.display = 'inline';
+    document.getElementById('senhaHint').textContent = 'Mínimo 6 caracteres';
+    document.getElementById('ativo').checked = true;
+    document.getElementById('modalUsuario').classList.add('active');
+}
+
+function editarUsuario(id) {
+    const usuario = usuarios.find(u => u.id === id);
+    if (!usuario) return;
+
+    modoEdicao = true;
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-user-edit"></i> Editar Usuário';
+    document.getElementById('usuarioId').value = usuario.id;
+    document.getElementById('nome').value = usuario.nome;
+    document.getElementById('email').value = usuario.email;
+    document.getElementById('senha').value = '';
+    document.getElementById('isAdmin').checked = usuario.is_admin;
+    document.getElementById('ativo').checked = usuario.ativo;
+    document.getElementById('senhaObrigatorio').style.display = 'none';
+    document.getElementById('senhaHint').textContent = 'Deixe em branco para manter a senha atual';
+    document.getElementById('modalUsuario').classList.add('active');
+}
+
+function fecharModal() {
+    document.getElementById('modalUsuario').classList.remove('active');
+}
+
+async function salvarUsuario() {
+    const id = document.getElementById('usuarioId').value;
+    const nome = document.getElementById('nome').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    const isAdmin = document.getElementById('isAdmin').checked;
+    const ativo = document.getElementById('ativo').checked;
+
+    if (!nome || !email) {
+        AssemblPro.utils.toast('Preencha todos os campos obrigatórios');
+        return;
+    }
+
+    if (!modoEdicao && (!senha || senha.length < 6)) {
+        AssemblPro.utils.toast('A senha deve ter pelo menos 6 caracteres');
+        return;
+    }
+
+    const dados = {
+        nome,
+        email,
+        is_admin: isAdmin,
+        ativo
+    };
+
+    if (senha) {
+        dados.senha = senha;
+    }
+
+    try {
+        let response;
+        if (modoEdicao) {
+            response = await fetch(`/api/usuarios/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...{ 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                },
+                body: JSON.stringify(dados)
+            });
+        } else {
+            response = await fetch('/api/usuarios/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...{ 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                },
+                body: JSON.stringify(dados)
+            });
+        }
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Erro ao salvar usuário');
+        }
+
+        AssemblPro.utils.toast(modoEdicao ? 'Usuário atualizado!' : 'Usuário criado!');
+        fecharModal();
+        carregarUsuarios();
+    } catch (error) {
+        console.error(error);
+        AssemblPro.utils.toast(error.message);
+    }
+}
+
+let usuarioParaExcluir = null;
+
+function confirmarExclusao(id, nome) {
+    usuarioParaExcluir = id;
+    document.getElementById('nomeExcluir').textContent = nome;
+    document.getElementById('modalExcluir').classList.add('active');
+}
+
+function fecharModalExcluir() {
+    document.getElementById('modalExcluir').classList.remove('active');
+    usuarioParaExcluir = null;
+}
+
+document.getElementById('btnConfirmarExclusao').addEventListener('click', async () => {
+    if (!usuarioParaExcluir) return;
+
+    try {
+        const response = await fetch(`/api/usuarios/${usuarioParaExcluir}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+
+        if (!response.ok) throw new Error('Erro ao excluir usuário');
+
+        AssemblPro.utils.toast('Usuário excluído');
+        fecharModalExcluir();
+        carregarUsuarios();
+    } catch (error) {
+        console.error(error);
+        AssemblPro.utils.toast('Erro ao excluir usuário');
+    }
+});
+
+// Fecha modais ao clicar fora
+document.getElementById('modalUsuario').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) fecharModal();
+});
+document.getElementById('modalExcluir').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) fecharModalExcluir();
+});
+</script>
+{% endblock %}

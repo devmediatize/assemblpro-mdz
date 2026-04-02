@@ -7,26 +7,15 @@
     <main class="main-content">
         <div class="content-header">
             <a href="/admin/eleicoes" class="back-link">
-                <i class="fas fa-arrow-left"></i> Voltar para Eleicoes
+                <i class="fas fa-arrow-left"></i> Voltar para Eleições
             </a>
-            <h1>Editar Eleicao</h1>
-            <p class="subtitle">Edite os dados da eleicao</p>
+            <h1>Editar Eleição</h1>
+            <p class="subtitle">Edite os dados da eleição</p>
         </div>
 
         <div id="loadingContainer" style="text-align: center; padding: 3rem;">
             <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--accent-green);"></i>
             <p style="margin-top: 1rem; color: var(--text-muted);">Carregando...</p>
-        </div>
-
-        <div id="bloqueadoContainer" style="display: none;">
-            <div class="card" style="text-align: center; padding: 3rem;">
-                <i class="fas fa-lock fa-3x" style="color: var(--accent-red); margin-bottom: 1rem;"></i>
-                <h3>Edicao Bloqueada</h3>
-                <p id="motivoBloqueio" style="color: var(--text-muted);"></p>
-                <a href="/admin/eleicoes" class="btn btn-secondary mt-3">
-                    <i class="fas fa-arrow-left"></i> Voltar
-                </a>
-            </div>
         </div>
 
         <div id="formContainer" style="display: none;">
@@ -36,17 +25,17 @@
                         <h3><i class="fas fa-info-circle" style="color: var(--accent-green);"></i> Dados Gerais</h3>
 
                         <div class="form-group">
-                            <label class="form-label">Titulo da Eleicao *</label>
+                            <label class="form-label">Título da Eleição *</label>
                             <input type="text" class="form-control" id="titulo" required>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Descricao</label>
+                            <label class="form-label">Descrição</label>
                             <textarea class="form-control" id="descricao" rows="3"></textarea>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Tipo de Eleicao *</label>
+                            <label class="form-label">Tipo de Eleição *</label>
                             <select class="form-control" id="tipo">
                                 <option value="conselho">Conselho</option>
                                 <option value="assembleia">Assembleia</option>
@@ -56,12 +45,12 @@
                     </div>
 
                     <div class="form-section">
-                        <h3><i class="fas fa-calendar-alt" style="color: var(--accent-blue);"></i> Periodo</h3>
+                        <h3><i class="fas fa-calendar-alt" style="color: var(--accent-blue);"></i> Período</h3>
 
                         <div class="row">
                             <div class="col-6">
                                 <div class="form-group">
-                                    <label class="form-label">Data Inicio *</label>
+                                    <label class="form-label">Data Início *</label>
                                     <input type="datetime-local" class="form-control" id="dataInicio" required>
                                 </div>
                             </div>
@@ -78,14 +67,14 @@
                         <h3><i class="fas fa-sliders-h" style="color: var(--accent-purple);"></i> Regras</h3>
 
                         <div class="form-group">
-                            <label class="form-label">Maximo de Votos por Cooperado</label>
+                            <label class="form-label">Máximo de Votos por Cooperado</label>
                             <input type="number" class="form-control" id="maxVotos" min="1" max="10" value="1">
                         </div>
 
                         <div class="form-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="exigeMfa">
-                                <span>Exigir verificacao por SMS/Email (MFA)</span>
+                                <span>Exigir verificação por SMS/Email (MFA)</span>
                             </label>
                         </div>
 
@@ -102,7 +91,7 @@
                             <i class="fas fa-times"></i> Cancelar
                         </a>
                         <button type="submit" class="btn btn-primary" id="btnSalvar">
-                            <i class="fas fa-save"></i> Salvar Alteracoes
+                            <i class="fas fa-save"></i> Salvar Alterações
                         </button>
                     </div>
                 </form>
@@ -180,31 +169,14 @@ const eleicaoId = {{ eleicao_id }};
 
 async function carregarEleicao() {
     try {
-        // Carrega dados da eleicao
         const response = await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}`);
         if (!response.ok) {
-            throw new Error('Eleicao nao encontrada');
+            throw new Error('Eleição não encontrada');
         }
 
         const eleicao = await response.json();
 
-        // Verifica se pode editar
-        if (['votacao', 'encerrada', 'apurada'].includes(eleicao.status)) {
-            mostrarBloqueio('Eleicao em andamento ou encerrada nao pode ser editada');
-            return;
-        }
-
-        // Verifica se tem votos
-        const votosResponse = await AssemblPro.utils.fetch(`/eleicoes/${eleicaoId}/resultado`);
-        if (votosResponse.ok) {
-            const resultado = await votosResponse.json();
-            if (resultado.total_votos > 0) {
-                mostrarBloqueio(`Eleicao ja possui ${resultado.total_votos} voto(s) registrado(s)`);
-                return;
-            }
-        }
-
-        // Preenche o formulario
+        // Preenche o formulário
         document.getElementById('titulo').value = eleicao.titulo || '';
         document.getElementById('descricao').value = eleicao.descricao || '';
         document.getElementById('tipo').value = eleicao.tipo || 'conselho';
@@ -222,25 +194,19 @@ async function carregarEleicao() {
             document.getElementById('dataFim').value = formatDateTimeLocal(fim);
         }
 
-        // Mostra formulario
+        // Mostra formulário
         document.getElementById('loadingContainer').style.display = 'none';
         document.getElementById('formContainer').style.display = 'block';
 
     } catch (error) {
-        mostrarBloqueio(error.message);
+        AssemblPro.utils.toast(error.message, 'error');
+        setTimeout(() => window.location.href = '/admin/eleicoes', 2000);
     }
 }
 
 function formatDateTimeLocal(date) {
     const pad = n => n.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function mostrarBloqueio(motivo) {
-    document.getElementById('loadingContainer').style.display = 'none';
-    document.getElementById('formContainer').style.display = 'none';
-    document.getElementById('bloqueadoContainer').style.display = 'block';
-    document.getElementById('motivoBloqueio').textContent = motivo;
 }
 
 document.getElementById('formEleicao').addEventListener('submit', async (e) => {
@@ -273,13 +239,13 @@ document.getElementById('formEleicao').addEventListener('submit', async (e) => {
             throw new Error(result.detail || 'Erro ao salvar');
         }
 
-        AssemblPro.utils.toast('Eleicao atualizada com sucesso!', 'success');
+        AssemblPro.utils.toast('Eleição atualizada com sucesso!', 'success');
         window.location.href = '/admin/eleicoes';
 
     } catch (error) {
         AssemblPro.utils.toast(error.message, 'error');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alteracoes';
+        btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
     }
 });
 

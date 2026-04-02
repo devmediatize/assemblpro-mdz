@@ -402,3 +402,152 @@ async def verificar_participacao(
         return {"pode_votar": False, "motivo": "Já votou"}
 
     return {"pode_votar": True}
+
+
+# ============ ADMIN - GERENCIAMENTO DE VOTOS ============
+
+from app.models import Candidato, Chapa
+from app.utils.auth import require_admin
+import hashlib
+
+
+def criptografar_nome(nome: str) -> str:
+    """Criptografa parcialmente o nome para exibição"""
+    if not nome:
+        return "***"
+    partes = nome.split()
+    if len(partes) == 1:
+        return nome[0] + "*" * (len(nome) - 1)
+    # Mostra primeira letra de cada nome + asteriscos
+    resultado = []
+    for parte in partes:
+        if len(parte) > 1:
+            resultado.append(parte[0] + "*" * (len(parte) - 1))
+        else:
+            resultado.append(parte)
+    return " ".join(resultado)
+
+
+@router.get("/admin/eleicao/{eleicao_id}")
+async def listar_votos_eleicao(
+    eleicao_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Lista votos de uma eleição (apenas admin) - com nomes criptografados"""
+
+    # Verifica eleição
+    eleicao_result = await db.execute(
+        select(Eleicao).where(Eleicao.id == eleicao_id)
+    )
+    eleicao = eleicao_result.scalar_one_or_none()
+
+    if not eleicao:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Eleição não encontrada"
+        )
+
+    # Busca votos com joins
+    votos_result = await db.execute(
+        select(Voto, Cooperado, Candidato, Chapa)
+        .join(Cooperado, Voto.cooperado_id == Cooperado.id)
+        .outerjoin(Candidato, Voto.candidato_id == Candidato.id)
+        .outerjoin(Chapa, Voto.chapa_id == Chapa.id)
+        .where(Voto.eleicao_id == eleicao_id)
+        .order_by(Voto.created_at.desc())
+    )
+
+    votos = []
+    for voto, cooperado, candidato, chapa in votos_result.all():
+        votos.append({
+            "id": voto.id,
+            "cooperado_id": cooperado.id,
+            "cooperado_nome": cooperado.nome,
+            "cooperado_cpf": cooperado.cpf[:3] + ".***.***-" + cooperado.cpf[-2:],
+            "candidato_nome": criptografar_nome(candidato.nome) if candidato else None,
+            "chapa_nome": chapa.nome if chapa else None,
+            "opcao": voto.opcao,
+            "hash_voto": voto.hash_voto[:16] + "...",
+            "data_voto": voto.created_at.isoformat() if voto.created_at else None,
+            "ip_address": voto.ip_address
+        })
+
+    return {
+        "eleicao": {
+            "id": eleicao.id,
+            "titulo": eleicao.titulo,
+            "status": eleicao.status.value
+        },
+        "total_votos": len(votos),
+        "votos": votos
+    }
+
+
+@router.delete("/admin/{voto_id}")
+async def excluir_voto(
+    voto_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """Exclui um voto (apenas admin)"""
+
+    # Busca voto
+    voto_result = await db.execute(
+        select(Voto).where(Voto.id == voto_id)
+    )
+    voto = voto_result.scalar_one_or_none()
+
+    if not voto:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Voto não encontrado"
+        )
+
+    # Busca cooperado e eleição para log
+    cooperado_result = await db.execute(
+        select(Cooperado).where(Cooperado.id == voto.cooperado_id)
+    )
+    cooperado = cooperado_result.scalar_one_or_none()
+
+    eleicao_result = await db.execute(
+        select(Eleicao).where(Eleicao.id == voto.eleicao_id)
+    )
+    eleicao = eleicao_result.scalar_one_or_none()
+
+    # Reseta o convite para permitir novo voto
+    convite_result = await db.execute(
+        select(ConviteVotacao).where(
+            ConviteVotacao.eleicao_id == voto.eleicao_id,
+            ConviteVotacao.cooperado_id == voto.cooperado_id
+        )
+    )
+    convite = convite_result.scalar_one_or_none()
+
+    if convite:
+        convite.votou = False
+
+    # Remove OTPs relacionados
+    await db.execute(
+        delete(OtpVotacao).where(
+            OtpVotacao.cooperado_id == voto.cooperado_id,
+            OtpVotacao.eleicao_id == voto.eleicao_id
+        )
+    )
+
+    # Remove o voto
+    await db.delete(voto)
+
+    # Log de auditoria
+    await AuditoriaService.registrar(
+        db=db,
+        tipo=TipoLog.VOTO_EXCLUIDO,
+        descricao=f"Voto excluído - Cooperado: {cooperado.nome if cooperado else 'N/A'}, Eleição: {eleicao.titulo if eleicao else 'N/A'}",
+        cooperado_id=voto.cooperado_id,
+        eleicao_id=voto.eleicao_id,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "")[:255]
+    )
+
+    await db.commit()
+
+    return {"message": "Voto excluído com sucesso"}

@@ -246,3 +246,98 @@ async def listar_regioes(db: AsyncSession = Depends(get_db)):
     )
     regioes = [r[0] for r in result.all()]
     return {"regioes": regioes}
+
+
+@router.post("/{cooperado_id}/resetar-senha")
+async def resetar_senha_cooperado(
+    cooperado_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Gera nova senha e envia por email/SMS"""
+    import random
+    import string
+    from app.services.sms_service import SmsService
+    from app.services.email_service import EmailService
+    from app.models.configuracao import Configuracao
+
+    result = await db.execute(
+        select(Cooperado).where(Cooperado.id == cooperado_id)
+    )
+    cooperado = result.scalar_one_or_none()
+
+    if not cooperado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cooperado não encontrado"
+        )
+
+    # Gera senha aleatória de 8 caracteres
+    nova_senha = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+
+    # Atualiza a senha no banco
+    cooperado.senha_hash = hash_password(nova_senha)
+    await db.commit()
+
+    # Envia por SMS e/ou Email
+    enviou_sms = False
+    enviou_email = False
+    canais = []
+
+    # Busca URL base e nome do sistema
+    base_url_result = await db.execute(
+        select(Configuracao).where(Configuracao.chave == "baseUrl")
+    )
+    base_url_config = base_url_result.scalar_one_or_none()
+    base_url = base_url_config.valor if base_url_config else "http://localhost:8033"
+    logo_url = f"{base_url}/static/img/logo.png"
+
+    if cooperado.telefone:
+        resultado_sms = await SmsService.enviar_sms(
+            db,
+            cooperado.telefone,
+            f"AssemblPro - Sua nova senha é: {nova_senha}"
+        )
+        if resultado_sms.get("sucesso"):
+            enviou_sms = True
+            canais.append("SMS")
+
+    if cooperado.email:
+        resultado_email = await EmailService.enviar_email(
+            db,
+            cooperado.email,
+            "AssemblPro - Nova Senha",
+            f"""
+            <div style="font-family: Arial, sans-serif; background: #0a1628; padding: 30px; margin: 0;">
+                <div style="max-width: 400px; margin: 0 auto; background: #111d32; border-radius: 12px; padding: 30px; text-align: center;">
+                    <img src="{logo_url}" alt="Logo" style="max-height: 50px; margin-bottom: 15px;">
+                    <h2 style="color: #00d4aa; margin-top: 0;">Nova Senha</h2>
+                    <p style="color: #ffffff;">Olá, <strong style="color: #00d4aa;">{cooperado.nome}</strong>!</p>
+                    <p style="color: #ffffff;">Sua senha foi redefinida. Use a senha abaixo para acessar o sistema:</p>
+                    <div style="background: #162236; padding: 20px; border-radius: 8px; font-size: 24px; letter-spacing: 4px; color: #00d4aa; font-weight: bold; font-family: monospace;">
+                        {nova_senha}
+                    </div>
+                    <p style="color: #fbbf24; font-size: 14px; margin-top: 20px;">
+                        <strong>Importante:</strong> Recomendamos que você altere sua senha após o primeiro acesso.
+                    </p>
+                    <p style="color: #64748b; font-size: 12px; margin-top: 30px;">© 2026 AssemblPro</p>
+                </div>
+            </div>
+            """,
+            f"AssemblPro - Sua nova senha é: {nova_senha}"
+        )
+        if resultado_email.get("sucesso"):
+            enviou_email = True
+            canais.append("Email")
+
+    if not canais:
+        return {
+            "sucesso": False,
+            "mensagem": "Senha redefinida, mas não foi possível enviar. Cooperado sem email/telefone cadastrado.",
+            "senha": nova_senha  # Retorna a senha para o admin poder informar manualmente
+        }
+
+    return {
+        "sucesso": True,
+        "mensagem": f"Nova senha enviada por {' e '.join(canais)}",
+        "canais": canais
+    }
